@@ -24,7 +24,7 @@ class EnclosuresSeeder extends Seeder
         ];
 
         foreach ($enclosures as $name) {
-            Enclosure::create(['name' => $name]);
+            Enclosure::firstOrCreate(['name' => $name]);
         }
     }
 }

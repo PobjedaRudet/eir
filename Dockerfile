@@ -35,8 +35,6 @@ ENV APACHE_DOCUMENT_ROOT=/var/www/html/public \
     APP_ENV=production \
     APP_DEBUG=false \
     LOG_CHANNEL=stderr \
-    DB_CONNECTION=sqlite \
-    DB_DATABASE=/var/www/html/database/database.sqlite \
     CACHE_STORE=database \
     SESSION_DRIVER=database \
     QUEUE_CONNECTION=database
@@ -44,6 +42,7 @@ ENV APACHE_DOCUMENT_ROOT=/var/www/html/public \
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libicu-dev \
+        libpq-dev \
         libsqlite3-dev \
         libzip-dev \
         unzip \
@@ -51,6 +50,7 @@ RUN apt-get update \
         bcmath \
         intl \
         pdo_mysql \
+        pdo_pgsql \
         pdo_sqlite \
         zip \
     && a2enmod rewrite headers \
@@ -70,6 +70,7 @@ WORKDIR /var/www/html
 COPY . .
 COPY --from=vendor /app/vendor ./vendor
 COPY --from=frontend /app/public/build ./public/build
+COPY docker/start-container.sh /usr/local/bin/start-container
 
 RUN mkdir -p \
         bootstrap/cache \
@@ -79,7 +80,7 @@ RUN mkdir -p \
         storage/framework/testing \
         storage/framework/views \
         storage/logs \
-    && touch database/database.sqlite \
+    && chmod +x /usr/local/bin/start-container \
     && chown -R www-data:www-data \
         bootstrap/cache \
         database \
@@ -87,4 +88,4 @@ RUN mkdir -p \
 
 EXPOSE 8080
 
-CMD ["apache2-foreground"]
+CMD ["start-container"]

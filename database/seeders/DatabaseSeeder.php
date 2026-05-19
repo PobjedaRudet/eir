@@ -13,17 +13,25 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->create([
-            'name'  => 'Vodja Projekta',
-            'email' => 'vodja@eir.ba',
-            'role'  => 'vodja',
-        ]);
+        User::query()->updateOrCreate(
+            ['email' => 'vodja@eir.ba'],
+            [
+                'name' => 'Vodja Projekta',
+                'password' => 'password',
+                'role' => 'vodja',
+                'email_verified_at' => now(),
+            ],
+        );
 
-        User::factory()->create([
-            'name'  => 'Radnik Teren',
-            'email' => 'radnik@eir.ba',
-            'role'  => 'radnik',
-        ]);
+        User::query()->updateOrCreate(
+            ['email' => 'radnik@eir.ba'],
+            [
+                'name' => 'Radnik Teren',
+                'password' => 'password',
+                'role' => 'radnik',
+                'email_verified_at' => now(),
+            ],
+        );
 
         $this->call([
             CitiesAndStreetsSeeder::class,

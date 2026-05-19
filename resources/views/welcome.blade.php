@@ -1,12 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
     <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>{{ config('app.name') }} - Evidencija iskopa optičkih kablova</title>
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-        @fluxStyles
+        @include('partials.head', ['title' => 'Evidencija iskopa optičkih kablova'])
     </head>
     <body class="min-h-screen bg-zinc-950 text-white antialiased">
 

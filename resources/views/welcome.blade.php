@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>{{ config('app.name') }} â€” Evidencija iskopa optiÄŤkih kablova</title>
+        <title>{{ config('app.name') }} - Evidencija iskopa optičkih kablova</title>
         <link rel="icon" href="/favicon.ico" sizes="any">
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @fluxStyles
@@ -61,24 +61,24 @@
 
                 <h1 class="text-5xl sm:text-6xl font-bold tracking-tight leading-tight mb-6">
                     Evidencija iskopa<br>
-                    <span class="text-blue-400">optiÄŤkih kablova</span>
+                    <span class="text-blue-400">optičkih kablova</span>
                 </h1>
 
                 <p class="text-lg text-zinc-400 max-w-xl mx-auto mb-10 leading-relaxed">
-                    Digitalna platforma za praÄ‡enje radova na terenu. VoÄ‘e projekata upravljaju projektima,
-                    radnici evidentiraju iskop, uvlaÄŤenje i upuhivanje kabla u realnom vremenu.
+                    Digitalna platforma za praćenje radova na terenu. Vođe projekata upravljaju projektima,
+                    radnici evidentiraju iskop, uvlačenje i upuhivanje kabla u realnom vremenu.
                 </p>
 
                 <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
                     @auth
                         <a href="{{ route('dashboard') }}"
                            class="w-full sm:w-auto px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 font-semibold text-sm transition-colors shadow-lg shadow-blue-600/25">
-                            Otvori aplikaciju â†’
+                            Otvori aplikaciju &rarr;
                         </a>
                     @else
                         <a href="{{ route('login') }}"
                            class="w-full sm:w-auto px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 font-semibold text-sm transition-colors shadow-lg shadow-blue-600/25">
-                            Prijavite se â†’
+                            Prijavite se &rarr;
                         </a>
                     @endauth
                 </div>
@@ -96,7 +96,7 @@
                         </svg>
                     </div>
                     <h3 class="font-semibold text-white mb-1.5">Upravljanje projektima</h3>
-                    <p class="text-sm text-zinc-400 leading-relaxed">VoÄ‘e projekata kreiraju projekte, definiĹˇu ulice i dodjeljuju radove timovima.</p>
+                    <p class="text-sm text-zinc-400 leading-relaxed">Vođe projekata kreiraju projekte, definišu ulice i dodjeljuju radove timovima.</p>
                 </div>
 
                 <div class="rounded-2xl border border-white/8 bg-white/3 p-6 hover:bg-white/5 transition-colors">
@@ -106,7 +106,7 @@
                         </svg>
                     </div>
                     <h3 class="font-semibold text-white mb-1.5">Evidencija radova</h3>
-                    <p class="text-sm text-zinc-400 leading-relaxed">Radnici biljeĹľe iskop, uvlaÄŤenje i upuhivanje kabla s fotografijama i mjerama.</p>
+                    <p class="text-sm text-zinc-400 leading-relaxed">Radnici bilježe iskop, uvlačenje i upuhivanje kabla s fotografijama i mjerama.</p>
                 </div>
 
                 <div class="rounded-2xl border border-white/8 bg-white/3 p-6 hover:bg-white/5 transition-colors">
@@ -124,7 +124,7 @@
 
         {{-- Footer --}}
         <footer class="border-t border-white/5 py-6 px-6 text-center">
-            <p class="text-xs text-zinc-600">Â© {{ date('Y') }} {{ config('app.name') }}. Sva prava pridrĹľana.</p>
+            <p class="text-xs text-zinc-600">&copy; {{ date('Y') }} {{ config('app.name') }}. Sva prava pridržana.</p>
         </footer>
 
         @fluxScripts

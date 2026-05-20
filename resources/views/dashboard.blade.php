@@ -65,6 +65,24 @@
                 </a>
             </div>
         @else
+            {{-- Nabavka --}}
+            @if (auth()->user()->isNabavka())
+            <div class="grid gap-4 md:grid-cols-2">
+                <a href="{{ route('nabavka.dashboard') }}" wire:navigate
+                   class="group flex flex-col gap-3 p-6 rounded-xl border border-neutral-200 dark:border-neutral-700
+                          bg-white dark:bg-neutral-900 hover:border-orange-500 hover:shadow-md transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
+                            <flux:icon name="shopping-cart" class="size-6" />
+                        </div>
+                        <flux:heading size="lg">Narudžbenice</flux:heading>
+                    </div>
+                    <flux:text class="text-neutral-500 dark:text-neutral-400">
+                        Upravljajte narudžbenicama kreiranim iz odobrenih naloga.
+                    </flux:text>
+                </a>
+            </div>
+            @else
             {{-- Radnik na terenu --}}
             <div class="grid gap-4 md:grid-cols-2">
                 <a href="{{ route('radnik.unosi') }}" wire:navigate
@@ -95,6 +113,7 @@
                     </flux:text>
                 </a>
             </div>
+            @endif
         @endif
     </div>
 </x-layouts::app>

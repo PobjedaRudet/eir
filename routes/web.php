@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\MpmApiController;
+use App\Http\Controllers\Api\NabavkaApiController;
 use App\Http\Controllers\Api\NotificationsApiController;
 use App\Http\Controllers\Api\RadnikApiController;
 use App\Http\Controllers\Api\VodjaApiController;
@@ -111,6 +112,17 @@ Route::middleware(['auth', 'verified', 'role:mpm'])->group(function () {
         Route::get('orders/pending', [MpmApiController::class, 'pendingOrders']);
         Route::post('orders/{order}/approve', [MpmApiController::class, 'approveOrder']);
         Route::post('orders/{order}/reject', [MpmApiController::class, 'rejectOrder']);
+    });
+});
+
+// Nabavka (procurement)
+Route::middleware(['auth', 'verified', 'role:nabavka'])->group(function () {
+    Route::view('nabavka/dashboard', 'pages.nabavka.dashboard')->name('nabavka.dashboard');
+
+    Route::prefix('api/nabavka')->group(function () {
+        Route::get('purchase-orders', [NabavkaApiController::class, 'index']);
+        Route::post('purchase-orders/{purchaseOrder}/order', [NabavkaApiController::class, 'markOrdered']);
+        Route::post('purchase-orders/{purchaseOrder}/deliver', [NabavkaApiController::class, 'markDelivered']);
     });
 });
 

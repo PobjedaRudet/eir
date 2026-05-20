@@ -32,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
         Route::model('order', \App\Models\WorkOrder::class);
         Route::model('orderItem', \App\Models\WorkOrderItem::class);
         Route::model('serviceOrder', \App\Models\ServiceOrder::class);
+        Route::model('purchaseOrder', \App\Models\PurchaseOrder::class);
     }
 
     /**

@@ -14,6 +14,7 @@ use App\Models\Street;
 use App\Models\User;
 use App\Notifications\OrderApprovedNotification;
 use App\Notifications\OrderRejectedNotification;
+use App\Notifications\PurchaseOrderCreatedNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -553,8 +554,20 @@ class MpmApiController extends Controller
         ]);
 
         // Notify vodja (order creator)
-        $order->load(['creator', 'project', 'reviewer']);
+        $order->load(['creator', 'project', 'reviewer', 'items']);
         $order->creator?->notify(new OrderApprovedNotification($order));
+
+        // Auto-create purchase order for procurement
+        $purchaseOrder = \App\Models\PurchaseOrder::create([
+            'work_order_id' => $order->id,
+            'status'        => \App\Models\PurchaseOrder::STATUS_KREIRANA,
+            'created_by'    => Auth::id(),
+        ]);
+        $purchaseOrder->load(['workOrder.project', 'workOrder.items']);
+
+        // Notify all nabavka users
+        User::where('role', 'nabavka')->get()
+            ->each(fn ($u) => $u->notify(new PurchaseOrderCreatedNotification($purchaseOrder)));
 
         return response()->json(['message' => 'Nalog je odobren.']);
     }

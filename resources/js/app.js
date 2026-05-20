@@ -14,6 +14,7 @@ import MpmOprema from './components/mpm/Oprema.vue'
 import MpmOdobrenja from './components/mpm/Odobrenja.vue'
 import MpmPlan from './components/mpm/Plan.vue'
 import NotificationBell from './components/shared/NotificationBell.vue'
+import NabavkaDashboard from './components/nabavka/Dashboard.vue'
 
 const components = {
     'vue-radnik-unosi': RadnikUnosi,
@@ -31,6 +32,7 @@ const components = {
     'vue-mpm-odobrenja': MpmOdobrenja,
     'vue-mpm-plan': MpmPlan,
     'vue-notification-bell': NotificationBell,
+    'vue-nabavka-dashboard': NabavkaDashboard,
 }
 
 function mountVueApps() {

@@ -53,6 +53,10 @@
                             <flux:sidebar.item icon="plus-circle" :href="route('radnik.novi-unos')" :current="request()->routeIs('radnik.novi-unos')" wire:navigate>
                                 {{ __('Novi unos') }}
                             </flux:sidebar.item>
+                        @elseif(auth()->user()->isNabavka())
+                            <flux:sidebar.item icon="shopping-cart" :href="route('nabavka.dashboard')" :current="request()->routeIs('nabavka.dashboard')" wire:navigate>
+                                {{ __('Narudžbenice') }}
+                            </flux:sidebar.item>
                         @endif
                     @endauth
                 </flux:sidebar.group>

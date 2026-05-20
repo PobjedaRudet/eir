@@ -101,11 +101,17 @@ const form = reactive({
 async function onCityChange() {
   form.street_ids = []
   streets.value = []
+  serverError.value = ''
+
   if (!form.city_id) return
+
   streetsLoading.value = true
+
   try {
     const res = await fetch(`${BASE}/api/vodja/cities/${form.city_id}/streets`, { headers: { 'Accept': 'application/json' } })
-    streets.value = await res.json()
+    streets.value = await getJsonOrThrow(res, 'Ne mogu učitati ulice za izabrani grad.')
+  } catch (error) {
+    serverError.value = error instanceof Error ? error.message : 'Ne mogu učitati ulice za izabrani grad.'
   } finally {
     streetsLoading.value = false
   }
@@ -154,11 +160,26 @@ function getCsrf() {
   return match ? decodeURIComponent(match[1]) : ''
 }
 
+async function getJsonOrThrow(response, fallbackMessage) {
+  const contentType = response.headers.get('content-type') ?? ''
+  const payload = contentType.includes('application/json') ? await response.json() : null
+
+  if (!response.ok) {
+    throw new Error(payload?.message ?? fallbackMessage)
+  }
+
+  return payload
+}
+
 onMounted(async () => {
+  serverError.value = ''
+
   try {
     const res = await fetch(BASE + '/api/vodja/project-form-config', { headers: { 'Accept': 'application/json' } })
-    const data = await res.json()
+    const data = await getJsonOrThrow(res, 'Ne mogu učitati gradove iz baze.')
     cities.value = data.cities
+  } catch (error) {
+    serverError.value = error instanceof Error ? error.message : 'Ne mogu učitati gradove iz baze.'
   } finally {
     configLoading.value = false
   }

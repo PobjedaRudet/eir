@@ -1,0 +1,211 @@
+<template>
+  <div class="max-w-3xl">
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-6">
+      <a :href="BASE + '/vodja/projekti'"
+         class="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
+        <svg class="size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+        </svg>
+      </a>
+      <div>
+        <h1 class="text-xl font-bold text-zinc-900 dark:text-white">Servisni nalozi</h1>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ project?.name ?? '...' }}</p>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="loading" class="flex justify-center py-12">
+      <div class="size-8 border-4 border-zinc-200 border-t-blue-500 rounded-full animate-spin"></div>
+    </div>
+
+    <!-- Error -->
+    <div v-else-if="serverError" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm">
+      {{ serverError }}
+    </div>
+
+    <template v-else>
+      <!-- Filter tabs -->
+      <div class="flex gap-1 p-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 w-fit mb-5">
+        <button v-for="tab in tabs" :key="tab.key"
+                @click="activeTab = tab.key"
+                class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors"
+                :class="activeTab === tab.key
+                  ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
+                  : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'">
+          {{ tab.label }}
+          <span v-if="tab.key === 'sent' && sentCount"
+                class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+            {{ sentCount }}
+          </span>
+        </button>
+      </div>
+
+      <!-- Empty state -->
+      <div v-if="!filteredOrders.length" class="text-center py-12 text-zinc-400 dark:text-zinc-500">
+        <svg class="size-10 mx-auto mb-3 opacity-40" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l5.654-4.654m5.96-4.62a2.625 2.625 0 1 0-5.25 0m5.25 0a2.625 2.625 0 0 1-5.25 0" />
+        </svg>
+        <p class="text-sm">Nema servisnih naloga{{ activeTab === 'sent' ? ' na čekanju' : '' }}.</p>
+      </div>
+
+      <!-- Orders list -->
+      <div v-else class="space-y-3">
+        <div v-for="so in filteredOrders" :key="so.id"
+             class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+          <div class="flex items-start gap-4 px-4 py-3">
+            <!-- Icon -->
+            <div class="mt-0.5 shrink-0 size-8 rounded-lg flex items-center justify-center"
+                 :class="so.status === 'sent' ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'">
+              <svg v-if="so.status === 'sent'" class="size-4 text-orange-600 dark:text-orange-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l5.654-4.654m5.96-4.62a2.625 2.625 0 1 0-5.25 0m5.25 0a2.625 2.625 0 0 1-5.25 0" />
+              </svg>
+              <svg v-else class="size-4 text-emerald-600 dark:text-emerald-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+            </div>
+
+            <!-- Info -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-medium text-sm text-zinc-900 dark:text-white">{{ so.item_name }}</span>
+                <span class="text-xs text-zinc-400">{{ so.quantity_sent }} / {{ so.item_quantity }} {{ so.item_unit ?? '' }}</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                      :class="so.status === 'sent'
+                        ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                        : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'">
+                  {{ so.status === 'sent' ? 'Na servisu' : 'Vraćeno' }}
+                </span>
+              </div>
+              <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Nalog: <span class="font-medium">{{ so.work_order_label }}</span>
+                &nbsp;·&nbsp; Poslano: {{ so.sent_at }}
+                <template v-if="so.returned_at">&nbsp;·&nbsp; Vraćeno: {{ so.returned_at }}</template>
+              </p>
+              <p v-if="so.note" class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 italic">{{ so.note }}</p>
+            </div>
+
+            <!-- Return button -->
+            <button v-if="so.status === 'sent'"
+                    @click="openReturnModal(so)"
+                    class="shrink-0 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition-colors">
+              Evidentuj povratak
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Return modal -->
+    <div v-if="returnModal.show"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <div class="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-xl p-6">
+        <h3 class="text-base font-semibold text-zinc-900 dark:text-white mb-1">Evidentiraj povratak</h3>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
+          {{ returnModal.order?.item_name }}
+        </p>
+        <label class="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Napomena (opcionalno)</label>
+        <textarea v-model="returnModal.note" rows="3"
+                  class="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                  placeholder="Stanje opreme, napomene..."></textarea>
+        <div class="flex justify-end gap-2 mt-4">
+          <button @click="returnModal.show = false"
+                  class="px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+            Odustani
+          </button>
+          <button @click="confirmReturn" :disabled="returning"
+                  class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition-colors disabled:opacity-50">
+            {{ returning ? 'Sprema se...' : 'Potvrdi povratak' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, computed, onMounted } from 'vue'
+import { BASE } from '../../utils/base.js'
+
+const loading     = ref(true)
+const serverError = ref('')
+const project     = ref(null)
+const orders      = ref([])
+const activeTab   = ref('sent')
+const returning   = ref(false)
+
+const returnModal = reactive({ show: false, order: null, note: '' })
+
+const tabs = [
+  { key: 'sent',     label: 'Na servisu' },
+  { key: 'returned', label: 'Vraćeno' },
+  { key: 'all',      label: 'Svi' },
+]
+
+const filteredOrders = computed(() => {
+  if (activeTab.value === 'all') return orders.value
+  return orders.value.filter(o => o.status === activeTab.value)
+})
+
+const sentCount = computed(() => orders.value.filter(o => o.status === 'sent').length)
+
+function getProjectId() {
+  return window.location.pathname.split('/').at(-2)
+}
+
+function hdrs() {
+  const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+  return { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token }
+}
+
+async function load() {
+  loading.value = true
+  serverError.value = ''
+  try {
+    const pid = getProjectId()
+    const [projRes, soRes] = await Promise.all([
+      fetch(`${BASE}/api/vodja/projects`, { headers: hdrs() }),
+      fetch(`${BASE}/api/vodja/projects/${pid}/service-orders`, { headers: hdrs() }),
+    ])
+    const projects = await projRes.json()
+    project.value  = projects.find(p => String(p.id) === String(pid)) ?? null
+    orders.value   = await soRes.json()
+  } catch (e) {
+    serverError.value = 'Greška pri učitavanju podataka.'
+  } finally {
+    loading.value = false
+  }
+}
+
+function openReturnModal(so) {
+  returnModal.order = so
+  returnModal.note  = so.note ?? ''
+  returnModal.show  = true
+}
+
+async function confirmReturn() {
+  if (!returnModal.order) return
+  returning.value = true
+  try {
+    const res = await fetch(`${BASE}/api/vodja/service-orders/${returnModal.order.id}/return`, {
+      method: 'POST',
+      headers: hdrs(),
+      body: JSON.stringify({ note: returnModal.note }),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      const idx = orders.value.findIndex(o => o.id === updated.id)
+      if (idx !== -1) orders.value[idx] = updated
+      returnModal.show = false
+    } else {
+      const err = await res.json()
+      alert(err.message ?? 'Greška.')
+    }
+  } finally {
+    returning.value = false
+  }
+}
+
+onMounted(load)
+document.addEventListener('livewire:navigated', load)
+</script>

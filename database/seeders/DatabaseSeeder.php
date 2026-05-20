@@ -24,6 +24,16 @@ class DatabaseSeeder extends Seeder
         );
 
         User::query()->updateOrCreate(
+            ['email' => 'mpm@eir.ba'],
+            [
+                'name' => 'Menadžer Projekata',
+                'password' => 'password',
+                'role' => 'mpm',
+                'email_verified_at' => now(),
+            ],
+        );
+
+        User::query()->updateOrCreate(
             ['email' => 'radnik@eir.ba'],
             [
                 'name' => 'Radnik Teren',
@@ -36,6 +46,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CitiesAndStreetsSeeder::class,
             EnclosuresSeeder::class,
+            EquipmentSeeder::class,
         ]);
     }
 }

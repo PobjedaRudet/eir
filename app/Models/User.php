@@ -58,6 +58,11 @@ class User extends Authenticatable implements PasskeyUser
         return $this->role === 'radnik';
     }
 
+    public function isMpm(): bool
+    {
+        return $this->role === 'mpm';
+    }
+
     public function projects()
     {
         return $this->hasMany(Project::class);

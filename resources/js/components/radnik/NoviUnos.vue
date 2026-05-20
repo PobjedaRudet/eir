@@ -29,6 +29,9 @@
               {{ p.name }} — {{ p.city }}
             </option>
           </select>
+          <p v-if="!config.projects.length && !serverError" class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+            Nema projekata za odabir. Na ovoj formi se gradovi i ulice ne učitavaju direktno iz tabela, nego kroz već kreirane projekte.
+          </p>
           <p v-if="errors['project_id']" class="mt-1 text-sm text-red-600">{{ errors['project_id'][0] }}</p>
         </div>
 
@@ -561,12 +564,32 @@ function getCsrf() {
   return match ? decodeURIComponent(match[1]) : ''
 }
 
+async function getJsonOrThrow(response, fallbackMessage) {
+  const contentType = response.headers.get('content-type') ?? ''
+  const payload = contentType.includes('application/json') ? await response.json() : null
+
+  if (!response.ok) {
+    throw new Error(payload?.message ?? fallbackMessage)
+  }
+
+  return payload
+}
+
 onMounted(async () => {
   document.addEventListener('click', onDocumentClick)
+  serverError.value = ''
 
   try {
     const res = await fetch(BASE + '/api/radnik/form-config', { headers: { 'Accept': 'application/json' } })
-    config.value = await res.json()
+    const data = await getJsonOrThrow(res, 'Ne mogu učitati projekte i pomoćne podatke iz baze.')
+    config.value = {
+      projects: data.projects ?? [],
+      enclosures: data.enclosures ?? [],
+      cable_types: data.cable_types ?? [],
+      work_types: data.work_types ?? {},
+    }
+  } catch (error) {
+    serverError.value = error instanceof Error ? error.message : 'Ne mogu učitati projekte i pomoćne podatke iz baze.'
   } finally {
     configLoading.value = false
   }

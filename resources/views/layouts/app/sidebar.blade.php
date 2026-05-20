@@ -21,11 +21,27 @@
                             <flux:sidebar.item icon="folder-open" :href="route('vodja.projekti')" :current="request()->routeIs('vodja.projekti')" wire:navigate>
                                 {{ __('Projekti') }}
                             </flux:sidebar.item>
-                            <flux:sidebar.item icon="plus-circle" :href="route('vodja.novi-projekat')" :current="request()->routeIs('vodja.novi-projekat')" wire:navigate>
-                                {{ __('Novi projekat') }}
+                            <flux:sidebar.item icon="archive-box" :href="route('vodja.projekti')" :current="request()->routeIs('vodja.resursi')" wire:navigate>
+                                {{ __('Resursi') }}
+                            </flux:sidebar.item>
+                            <flux:sidebar.item icon="wrench-screwdriver" :href="route('vodja.servisni-nalozi')" :current="request()->routeIs('vodja.servisni-nalozi')" wire:navigate>
+                                {{ __('Servisni nalozi') }}
                             </flux:sidebar.item>
                             <flux:sidebar.item icon="chart-bar" :href="route('vodja.izvjestaj')" :current="request()->routeIs('vodja.izvjestaj')" wire:navigate>
                                 {{ __('Izvještaj') }}
+                            </flux:sidebar.item>
+                        @elseif(auth()->user()->isMpm())
+                            <flux:sidebar.item icon="rectangle-stack" :href="route('mpm.portal')" :current="request()->routeIs('mpm.portal')" wire:navigate>
+                                {{ __('Portal') }}
+                            </flux:sidebar.item>
+                            <flux:sidebar.item icon="folder-open" :href="route('mpm.projekti')" :current="request()->routeIs('mpm.projekti')" wire:navigate>
+                                {{ __('Projekti') }}
+                            </flux:sidebar.item>
+                            <flux:sidebar.item icon="archive-box" :href="route('mpm.oprema')" :current="request()->routeIs('mpm.oprema')" wire:navigate>
+                                {{ __('Katalog') }}
+                            </flux:sidebar.item>
+                            <flux:sidebar.item icon="check-badge" :href="route('mpm.odobrenja')" :current="request()->routeIs('mpm.odobrenja')" wire:navigate>
+                                {{ __('Odobrenja') }}
                             </flux:sidebar.item>
                         @elseif(auth()->user()->isRadnik())
                             <flux:sidebar.item icon="clipboard-document-list" :href="route('radnik.unosi')" :current="request()->routeIs('radnik.unosi')" wire:navigate>

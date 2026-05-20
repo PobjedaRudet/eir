@@ -5,6 +5,7 @@ namespace App\Providers;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -25,6 +26,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        Route::model('plan', \App\Models\ResourcePlan::class);
+        Route::model('item', \App\Models\ResourcePlanItem::class);
+        Route::model('order', \App\Models\WorkOrder::class);
+        Route::model('orderItem', \App\Models\WorkOrderItem::class);
+        Route::model('serviceOrder', \App\Models\ServiceOrder::class);
     }
 
     /**

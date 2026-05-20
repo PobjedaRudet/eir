@@ -2,15 +2,33 @@ import { createApp } from 'vue'
 import RadnikUnosi from './components/radnik/Unosi.vue'
 import RadnikNoviUnos from './components/radnik/NoviUnos.vue'
 import VodjaProjekat from './components/vodja/Projekti.vue'
-import VodjaNoviProjekat from './components/vodja/NoviProjekat.vue'
+import VodjaResursi from './components/vodja/Resursi.vue'
 import VodjaIzvjestaj from './components/vodja/Izvjestaj.vue'
+import VodjaServis from './components/vodja/ServisniNalozi.vue'
+import VodjaSviServis from './components/vodja/SviServisniNalozi.vue'
+import MpmPortal from './components/mpm/Portal.vue'
+import MpmProjekat from './components/mpm/Projekti.vue'
+import MpmNoviProjekat from './components/mpm/NoviProjekat.vue'
+import MpmRadnici from './components/mpm/Radnici.vue'
+import MpmOprema from './components/mpm/Oprema.vue'
+import MpmOdobrenja from './components/mpm/Odobrenja.vue'
+import MpmPlan from './components/mpm/Plan.vue'
 
 const components = {
     'vue-radnik-unosi': RadnikUnosi,
     'vue-radnik-novi-unos': RadnikNoviUnos,
     'vue-vodja-projekti': VodjaProjekat,
-    'vue-vodja-novi-projekat': VodjaNoviProjekat,
+    'vue-vodja-resursi': VodjaResursi,
     'vue-vodja-izvjestaj': VodjaIzvjestaj,
+    'vue-vodja-servis': VodjaServis,
+    'vue-vodja-svi-servisni-nalozi': VodjaSviServis,
+    'vue-mpm-portal': MpmPortal,
+    'vue-mpm-projekti': MpmProjekat,
+    'vue-mpm-novi-projekat': MpmNoviProjekat,
+    'vue-mpm-radnici': MpmRadnici,
+    'vue-mpm-oprema': MpmOprema,
+    'vue-mpm-odobrenja': MpmOdobrenja,
+    'vue-mpm-plan': MpmPlan,
 }
 
 function mountVueApps() {
@@ -25,5 +43,5 @@ function mountVueApps() {
 // Initial mount (type="module" scripts are deferred — DOM is ready)
 mountVueApps()
 
-// Re-mount after Livewire wire:navigate replaces the DOM
+// Re-mount after Livewire wire:navigate replaces the DOM (Flux uses this internally)
 document.addEventListener('livewire:navigated', mountVueApps)

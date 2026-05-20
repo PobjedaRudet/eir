@@ -30,8 +30,24 @@ class Project extends Model
         return $this->belongsToMany(Street::class);
     }
 
+    public function workers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'project_worker');
+    }
+
+    public function equipment(): BelongsToMany
+    {
+        return $this->belongsToMany(Equipment::class, 'project_equipment')
+            ->withPivot('assigned_date', 'status', 'quantity');
+    }
+
     public function workEntries(): HasMany
     {
         return $this->hasMany(WorkEntry::class);
+    }
+
+    public function resourcePlans(): HasMany
+    {
+        return $this->hasMany(ResourcePlan::class);
     }
 }

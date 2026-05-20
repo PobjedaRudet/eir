@@ -12,6 +12,8 @@ use App\Models\ResourcePlan;
 use App\Models\ResourcePlanHistory;
 use App\Models\Street;
 use App\Models\User;
+use App\Notifications\OrderApprovedNotification;
+use App\Notifications\OrderRejectedNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -550,6 +552,10 @@ class MpmApiController extends Controller
             'review_note' => null,
         ]);
 
+        // Notify vodja (order creator)
+        $order->load(['creator', 'project', 'reviewer']);
+        $order->creator?->notify(new OrderApprovedNotification($order));
+
         return response()->json(['message' => 'Nalog je odobren.']);
     }
 
@@ -567,6 +573,10 @@ class MpmApiController extends Controller
             'reviewed_at' => now(),
             'review_note' => $data['note'],
         ]);
+
+        // Notify vodja (order creator)
+        $order->load(['creator', 'project', 'reviewer']);
+        $order->creator?->notify(new OrderRejectedNotification($order));
 
         return response()->json(['message' => 'Nalog je odbijen.']);
     }

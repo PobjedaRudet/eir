@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\MpmApiController;
+use App\Http\Controllers\Api\NotificationsApiController;
 use App\Http\Controllers\Api\RadnikApiController;
 use App\Http\Controllers\Api\VodjaApiController;
 use Illuminate\Support\Facades\Route;
@@ -9,6 +10,13 @@ Route::view('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
+
+    // Notifications (shared — all roles)
+    Route::prefix('api/notifications')->group(function () {
+        Route::get('/', [NotificationsApiController::class, 'index']);
+        Route::post('/read-all', [NotificationsApiController::class, 'markAllRead']);
+        Route::post('/{notification}/read', [NotificationsApiController::class, 'markRead']);
+    });
 });
 
 // Vođa projekta

@@ -16,6 +16,7 @@ use App\Models\Street;
 use App\Models\WorkEntry;
 use App\Models\WorkOrder;
 use App\Models\WorkOrderItem;
+use App\Notifications\OrderSubmittedNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -452,6 +453,11 @@ class VodjaApiController extends Controller
         }
 
         $order->update(['status' => WorkOrder::STATUS_SUBMITTED]);
+
+        // Notify all MPM users
+        $order->load(['creator', 'project']);
+        \App\Models\User::where('role', 'mpm')->get()
+            ->each(fn ($mpm) => $mpm->notify(new OrderSubmittedNotification($order)));
 
         return response()->json(['message' => 'Nalog je podnesen na odobrenje.']);
     }

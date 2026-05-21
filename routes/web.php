@@ -26,7 +26,7 @@ Route::middleware(['auth', 'verified', 'role:vodja'])->group(function () {
     Route::view('vodja/izvjestaj', 'pages.vodja.izvjestaj')->name('vodja.izvjestaj');
     Route::view('vodja/projekti/{project}/resursi', 'pages.vodja.resursi')->name('vodja.resursi');
     Route::view('vodja/projekti/{project}/servis', 'pages.vodja.servis')->name('vodja.servis');
-        Route::view('vodja/servisni-nalozi', 'pages.vodja.svi-servisni-nalozi')->name('vodja.servisni-nalozi');
+    Route::view('vodja/servisni-nalozi', 'pages.vodja.svi-servisni-nalozi')->name('vodja.servisni-nalozi');
     Route::prefix('api/vodja')->group(function () {
         Route::get('projects', [VodjaApiController::class, 'projects']);
         // Resource Plans
@@ -77,6 +77,7 @@ Route::middleware(['auth', 'verified', 'role:mpm'])->group(function () {
     Route::view('mpm/projekti/{project}/plan', 'pages.mpm.plan')->name('mpm.plan');
     Route::view('mpm/oprema', 'pages.mpm.oprema')->name('mpm.oprema');
     Route::view('mpm/odobrenja', 'pages.mpm.odobrenja')->name('mpm.odobrenja');
+    Route::view('mpm/izvjestaj', 'pages.mpm.izvjestaj')->name('mpm.izvjestaj');
 
     Route::prefix('api/mpm')->group(function () {
         Route::get('projects', [MpmApiController::class, 'projects']);
@@ -112,6 +113,9 @@ Route::middleware(['auth', 'verified', 'role:mpm'])->group(function () {
         Route::get('orders/pending', [MpmApiController::class, 'pendingOrders']);
         Route::post('orders/{order}/approve', [MpmApiController::class, 'approveOrder']);
         Route::post('orders/{order}/reject', [MpmApiController::class, 'rejectOrder']);
+        // Report (shared with vodja)
+        Route::get('report', [VodjaApiController::class, 'report']);
+        Route::get('report-projects', [VodjaApiController::class, 'projects']);
     });
 });
 
@@ -120,7 +124,9 @@ Route::middleware(['auth', 'verified', 'role:nabavka'])->group(function () {
     Route::view('nabavka/dashboard', 'pages.nabavka.dashboard')->name('nabavka.dashboard');
 
     Route::prefix('api/nabavka')->group(function () {
+        Route::get('work-orders', [NabavkaApiController::class, 'workOrders']);
         Route::get('purchase-orders', [NabavkaApiController::class, 'index']);
+        Route::post('purchase-orders', [NabavkaApiController::class, 'createPurchaseOrder']);
         Route::post('purchase-orders/{purchaseOrder}/order', [NabavkaApiController::class, 'markOrdered']);
         Route::post('purchase-orders/{purchaseOrder}/deliver', [NabavkaApiController::class, 'markDelivered']);
     });

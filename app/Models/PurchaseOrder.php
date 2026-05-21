@@ -4,11 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseOrder extends Model
 {
-    const STATUS_KREIRANA   = 'kreirana';
-    const STATUS_NARUCENA   = 'narucena';
+    const STATUS_KREIRANA = 'kreirana';
+
+    const STATUS_NARUCENA = 'narucena';
+
     const STATUS_ISPORUCENA = 'isporucena';
 
     protected $fillable = [
@@ -16,13 +19,18 @@ class PurchaseOrder extends Model
     ];
 
     protected $casts = [
-        'ordered_at'  => 'datetime',
+        'ordered_at' => 'datetime',
         'delivered_at' => 'datetime',
     ];
 
     public function workOrder(): BelongsTo
     {
         return $this->belongsTo(WorkOrder::class);
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderItem::class);
     }
 
     public function creator(): BelongsTo

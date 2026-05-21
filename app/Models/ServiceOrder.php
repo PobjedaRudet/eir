@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ServiceOrder extends Model
 {
-    const STATUS_SENT     = 'sent';
+    const STATUS_SENT = 'sent';
+
     const STATUS_RETURNED = 'returned';
 
     protected $fillable = [
@@ -15,8 +16,8 @@ class ServiceOrder extends Model
     ];
 
     protected $casts = [
-        'sent_at'       => 'datetime',
-        'returned_at'   => 'datetime',
+        'sent_at' => 'datetime',
+        'returned_at' => 'datetime',
         'quantity_sent' => 'float',
     ];
 

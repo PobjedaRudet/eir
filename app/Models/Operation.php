@@ -22,22 +22,22 @@ class Operation extends Model
     ];
 
     protected $casts = [
-        'street_ids'      => 'array',
+        'street_ids' => 'array',
         'sub_operations' => 'array',
-        'splajsovano'    => 'boolean',
-        'aktivirano'     => 'boolean',
+        'splajsovano' => 'boolean',
+        'aktivirano' => 'boolean',
     ];
 
     const KINDS = [
-        'iskop'       => 'Iskop',
-        'upuhivanje'  => 'Upuhivanje kabla',
+        'iskop' => 'Iskop',
+        'upuhivanje' => 'Upuhivanje kabla',
     ];
 
     const EXCAVATION_TYPES = [
-        'iskop'         => 'Iskop',
+        'iskop' => 'Iskop',
         'iskop_flaster' => 'Iskop flaster',
-        'iskop_asfalt'  => 'Iskop asfalt',
-        'raketa'        => 'Raketa',
+        'iskop_asfalt' => 'Iskop asfalt',
+        'raketa' => 'Raketa',
     ];
 
     const DIMENSIONS = ['15x45', '15x60', '30x45', '30x60'];

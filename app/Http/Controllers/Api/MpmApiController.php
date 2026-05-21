@@ -12,9 +12,10 @@ use App\Models\ResourcePlan;
 use App\Models\ResourcePlanHistory;
 use App\Models\Street;
 use App\Models\User;
+use App\Models\WorkOrder;
 use App\Notifications\OrderApprovedNotification;
 use App\Notifications\OrderRejectedNotification;
-use App\Notifications\PurchaseOrderCreatedNotification;
+use App\Notifications\WorkOrderReadyForProcurementNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -34,15 +35,15 @@ class MpmApiController extends Controller
                     ->first();
 
                 return [
-                    'id'               => $p->id,
-                    'name'             => $p->name,
-                    'date'             => $p->date->format('d.m.Y.'),
-                    'city'             => $p->city->name,
-                    'streets'          => $p->streets->map(fn ($s) => ['id' => $s->id, 'name' => $s->name]),
-                    'entries_count'    => $p->workEntries->count(),
-                    'workers_count'    => $p->workers->count(),
-                    'plan_status'      => $latestPlan?->status,
-                    'plan_version'     => $latestPlan?->version,
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'date' => $p->date->format('d.m.Y.'),
+                    'city' => $p->city->name,
+                    'streets' => $p->streets->map(fn ($s) => ['id' => $s->id, 'name' => $s->name]),
+                    'entries_count' => $p->workEntries->count(),
+                    'workers_count' => $p->workers->count(),
+                    'plan_status' => $latestPlan?->status,
+                    'plan_version' => $latestPlan?->version,
                     'plan_reviewed_at' => $latestPlan?->reviewed_at?->format('d.m.Y. H:i'),
                     'plan_reviewed_by' => $latestPlan?->reviewer?->name,
                     'plan_review_note' => $latestPlan?->review_note,
@@ -78,16 +79,16 @@ class MpmApiController extends Controller
     public function storeProject(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'         => 'required|string|max:255',
-            'date'         => 'required|date',
-            'city_id'      => 'required|exists:cities,id',
-            'street_ids'   => 'required|array|min:1',
+            'name' => 'required|string|max:255',
+            'date' => 'required|date',
+            'city_id' => 'required|exists:cities,id',
+            'street_ids' => 'required|array|min:1',
             'street_ids.*' => 'exists:streets,id',
         ]);
 
         $project = Project::create([
-            'name'    => $data['name'],
-            'date'    => $data['date'],
+            'name' => $data['name'],
+            'date' => $data['date'],
             'city_id' => $data['city_id'],
             'user_id' => Auth::id(),
         ]);
@@ -105,8 +106,8 @@ class MpmApiController extends Controller
         $available = User::where('role', 'radnik')->orderBy('name')->get(['id', 'name', 'email']);
 
         return response()->json([
-            'project'   => ['id' => $project->id, 'name' => $project->name],
-            'assigned'  => $assigned,
+            'project' => ['id' => $project->id, 'name' => $project->name],
+            'assigned' => $assigned,
             'available' => $available,
         ]);
     }
@@ -116,7 +117,7 @@ class MpmApiController extends Controller
         $this->authorizeProject($project);
 
         $data = $request->validate([
-            'user_ids'   => 'present|array',
+            'user_ids' => 'present|array',
             'user_ids.*' => 'exists:users,id',
         ]);
 
@@ -135,15 +136,15 @@ class MpmApiController extends Controller
     {
         $items = Equipment::orderBy('category')->orderBy('name')->get()
             ->map(fn ($e) => [
-                'id'             => $e->id,
-                'name'           => $e->name,
-                'category'       => $e->category,
+                'id' => $e->id,
+                'name' => $e->name,
+                'category' => $e->category,
                 'category_label' => Equipment::CATEGORIES[$e->category] ?? $e->category,
-                'description'    => $e->description,
+                'description' => $e->description,
             ]);
 
         return response()->json([
-            'items'      => $items,
+            'items' => $items,
             'categories' => collect(Equipment::CATEGORIES)
                 ->map(fn ($label, $key) => ['key' => $key, 'label' => $label])
                 ->values(),
@@ -153,8 +154,8 @@ class MpmApiController extends Controller
     public function storeEquipment(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'        => 'required|string|max:100',
-            'category'    => 'required|in:' . implode(',', array_keys(Equipment::CATEGORIES)),
+            'name' => 'required|string|max:100',
+            'category' => 'required|in:'.implode(',', array_keys(Equipment::CATEGORIES)),
             'description' => 'nullable|string|max:255',
         ]);
 
@@ -166,8 +167,8 @@ class MpmApiController extends Controller
     public function updateEquipment(Request $request, Equipment $equipment): JsonResponse
     {
         $data = $request->validate([
-            'name'        => 'required|string|max:100',
-            'category'    => 'required|in:' . implode(',', array_keys(Equipment::CATEGORIES)),
+            'name' => 'required|string|max:100',
+            'category' => 'required|in:'.implode(',', array_keys(Equipment::CATEGORIES)),
             'description' => 'nullable|string|max:255',
         ]);
 
@@ -192,26 +193,26 @@ class MpmApiController extends Controller
             ->orderBy('submitted_at')
             ->get()
             ->map(fn ($plan) => [
-                'id'           => $plan->id,
-                'version'      => $plan->version,
-                'status'       => $plan->status,
-                'notes'        => $plan->notes,
+                'id' => $plan->id,
+                'version' => $plan->version,
+                'status' => $plan->status,
+                'notes' => $plan->notes,
                 'submitted_at' => $plan->submitted_at?->format('d.m.Y. H:i'),
-                'created_by'   => $plan->creator->name,
-                'project'      => [
-                    'id'   => $plan->project->id,
+                'created_by' => $plan->creator->name,
+                'project' => [
+                    'id' => $plan->project->id,
                     'name' => $plan->project->name,
                     'city' => $plan->project->city->name,
                 ],
                 'items' => $plan->items->map(fn ($item) => [
-                    'id'            => $item->id,
+                    'id' => $item->id,
                     'resource_type' => $item->resource_type,
                     'resource_name' => $item->resource_name,
-                    'quantity'      => (float) $item->quantity,
-                    'unit'          => $item->unit,
-                    'start_date'    => $item->start_date?->format('d.m.Y.'),
-                    'end_date'      => $item->end_date?->format('d.m.Y.'),
-                    'notes'         => $item->notes,
+                    'quantity' => (float) $item->quantity,
+                    'unit' => $item->unit,
+                    'start_date' => $item->start_date?->format('d.m.Y.'),
+                    'end_date' => $item->end_date?->format('d.m.Y.'),
+                    'notes' => $item->notes,
                 ])->values(),
                 'items_count' => $plan->items->count(),
             ]);
@@ -228,17 +229,17 @@ class MpmApiController extends Controller
         $data = $request->validate(['note' => 'nullable|string|max:500']);
 
         $plan->update([
-            'status'      => ResourcePlan::STATUS_APPROVED,
+            'status' => ResourcePlan::STATUS_APPROVED,
             'reviewed_by' => Auth::id(),
             'reviewed_at' => now(),
             'review_note' => $data['note'] ?? null,
         ]);
 
         ResourcePlanHistory::create([
-            'plan_id'    => $plan->id,
-            'user_id'    => Auth::id(),
-            'action'     => 'approved',
-            'data'       => isset($data['note']) ? ['note' => $data['note']] : null,
+            'plan_id' => $plan->id,
+            'user_id' => Auth::id(),
+            'action' => 'approved',
+            'data' => isset($data['note']) ? ['note' => $data['note']] : null,
             'created_at' => now(),
         ]);
 
@@ -254,17 +255,17 @@ class MpmApiController extends Controller
         $data = $request->validate(['note' => 'required|string|max:500']);
 
         $plan->update([
-            'status'      => ResourcePlan::STATUS_REJECTED,
+            'status' => ResourcePlan::STATUS_REJECTED,
             'reviewed_by' => Auth::id(),
             'reviewed_at' => now(),
             'review_note' => $data['note'],
         ]);
 
         ResourcePlanHistory::create([
-            'plan_id'    => $plan->id,
-            'user_id'    => Auth::id(),
-            'action'     => 'rejected',
-            'data'       => ['note' => $data['note']],
+            'plan_id' => $plan->id,
+            'user_id' => Auth::id(),
+            'action' => 'rejected',
+            'data' => ['note' => $data['note']],
             'created_at' => now(),
         ]);
 
@@ -277,27 +278,27 @@ class MpmApiController extends Controller
     {
         $items = Material::orderBy('category')->orderBy('name')->get()
             ->map(fn ($m) => [
-                'id'             => $m->id,
-                'name'           => $m->name,
-                'category'       => $m->category,
+                'id' => $m->id,
+                'name' => $m->name,
+                'category' => $m->category,
                 'category_label' => Material::CATEGORIES[$m->category] ?? $m->category,
-                'unit'           => $m->unit,
-                'description'    => $m->description,
+                'unit' => $m->unit,
+                'description' => $m->description,
             ])->values();
 
         return response()->json([
-            'items'      => $items,
+            'items' => $items,
             'categories' => collect(Material::CATEGORIES)->map(fn ($label, $key) => ['key' => $key, 'label' => $label])->values(),
-            'units'      => Material::UNITS,
+            'units' => Material::UNITS,
         ]);
     }
 
     public function storeMaterial(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'        => 'required|string|max:100',
-            'category'    => 'required|in:' . implode(',', array_keys(Material::CATEGORIES)),
-            'unit'        => 'required|in:' . implode(',', Material::UNITS),
+            'name' => 'required|string|max:100',
+            'category' => 'required|in:'.implode(',', array_keys(Material::CATEGORIES)),
+            'unit' => 'required|in:'.implode(',', Material::UNITS),
             'description' => 'nullable|string|max:255',
         ]);
 
@@ -309,9 +310,9 @@ class MpmApiController extends Controller
     public function updateMaterial(Request $request, Material $material): JsonResponse
     {
         $data = $request->validate([
-            'name'        => 'required|string|max:100',
-            'category'    => 'required|in:' . implode(',', array_keys(Material::CATEGORIES)),
-            'unit'        => 'required|in:' . implode(',', Material::UNITS),
+            'name' => 'required|string|max:100',
+            'category' => 'required|in:'.implode(',', array_keys(Material::CATEGORIES)),
+            'unit' => 'required|in:'.implode(',', Material::UNITS),
             'description' => 'nullable|string|max:255',
         ]);
 
@@ -333,27 +334,27 @@ class MpmApiController extends Controller
     {
         $items = ProjectService::orderBy('category')->orderBy('name')->get()
             ->map(fn ($s) => [
-                'id'             => $s->id,
-                'name'           => $s->name,
-                'category'       => $s->category,
+                'id' => $s->id,
+                'name' => $s->name,
+                'category' => $s->category,
                 'category_label' => ProjectService::CATEGORIES[$s->category] ?? $s->category,
-                'unit'           => $s->unit,
-                'description'    => $s->description,
+                'unit' => $s->unit,
+                'description' => $s->description,
             ])->values();
 
         return response()->json([
-            'items'      => $items,
+            'items' => $items,
             'categories' => collect(ProjectService::CATEGORIES)->map(fn ($label, $key) => ['key' => $key, 'label' => $label])->values(),
-            'units'      => ProjectService::UNITS,
+            'units' => ProjectService::UNITS,
         ]);
     }
 
     public function storeService(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'        => 'required|string|max:100',
-            'category'    => 'required|in:' . implode(',', array_keys(ProjectService::CATEGORIES)),
-            'unit'        => 'required|in:' . implode(',', ProjectService::UNITS),
+            'name' => 'required|string|max:100',
+            'category' => 'required|in:'.implode(',', array_keys(ProjectService::CATEGORIES)),
+            'unit' => 'required|in:'.implode(',', ProjectService::UNITS),
             'description' => 'nullable|string|max:255',
         ]);
 
@@ -365,9 +366,9 @@ class MpmApiController extends Controller
     public function updateService(Request $request, ProjectService $projectService): JsonResponse
     {
         $data = $request->validate([
-            'name'        => 'required|string|max:100',
-            'category'    => 'required|in:' . implode(',', array_keys(ProjectService::CATEGORIES)),
-            'unit'        => 'required|in:' . implode(',', ProjectService::UNITS),
+            'name' => 'required|string|max:100',
+            'category' => 'required|in:'.implode(',', array_keys(ProjectService::CATEGORIES)),
+            'unit' => 'required|in:'.implode(',', ProjectService::UNITS),
             'description' => 'nullable|string|max:255',
         ]);
 
@@ -407,15 +408,15 @@ class MpmApiController extends Controller
 
         if (! $plan) {
             return response()->json([
-                'project'         => ['id' => $project->id, 'name' => $project->name],
-                'plan'            => null,
+                'project' => ['id' => $project->id, 'name' => $project->name],
+                'plan' => null,
                 'project_workers' => $projectWorkers,
             ]);
         }
 
         return response()->json([
             'project' => ['id' => $project->id, 'name' => $project->name],
-            'plan'    => $this->formatPlan($plan),
+            'plan' => $this->formatPlan($plan),
             'project_workers' => $projectWorkers,
         ]);
     }
@@ -425,21 +426,21 @@ class MpmApiController extends Controller
         $this->authorizeProject($project);
 
         $data = $request->validate([
-            'description'    => 'nullable|string|max:1000',
-            'teams'          => 'present|array|min:1',
-            'teams.*.name'   => 'required|string|max:200',
-            'teams.*.worker_ids'   => 'present|array',
+            'description' => 'nullable|string|max:1000',
+            'teams' => 'present|array|min:1',
+            'teams.*.name' => 'required|string|max:200',
+            'teams.*.worker_ids' => 'present|array',
             'teams.*.worker_ids.*' => 'exists:users,id',
         ]);
 
         $version = (ResourcePlan::where('project_id', $project->id)->max('version') ?? 0) + 1;
 
         $plan = ResourcePlan::create([
-            'project_id'  => $project->id,
-            'created_by'  => Auth::id(),
-            'version'     => $version,
-            'status'      => ResourcePlan::STATUS_APPROVED,
-            'notes'       => $data['description'] ?? null,
+            'project_id' => $project->id,
+            'created_by' => Auth::id(),
+            'version' => $version,
+            'status' => ResourcePlan::STATUS_APPROVED,
+            'notes' => $data['description'] ?? null,
             'reviewed_by' => Auth::id(),
             'reviewed_at' => now(),
         ]);
@@ -455,7 +456,7 @@ class MpmApiController extends Controller
 
         return response()->json([
             'message' => 'Radni plan je kreiran.',
-            'plan'    => $this->formatPlan($plan),
+            'plan' => $this->formatPlan($plan),
         ], 201);
     }
 
@@ -464,9 +465,9 @@ class MpmApiController extends Controller
         $this->authorizeProject($plan->project);
 
         $data = $request->validate([
-            'teams'                => 'present|array|min:1',
-            'teams.*.name'         => 'required|string|max:200',
-            'teams.*.worker_ids'   => 'present|array',
+            'teams' => 'present|array|min:1',
+            'teams.*.name' => 'required|string|max:200',
+            'teams.*.worker_ids' => 'present|array',
             'teams.*.worker_ids.*' => 'exists:users,id',
         ]);
 
@@ -490,19 +491,19 @@ class MpmApiController extends Controller
     private function formatPlan(ResourcePlan $plan): array
     {
         return [
-            'id'          => $plan->id,
-            'version'     => $plan->version,
+            'id' => $plan->id,
+            'version' => $plan->version,
             'description' => $plan->notes,
-            'created_at'  => $plan->created_at->format('d.m.Y. H:i'),
-            'teams'       => $this->formatTeams($plan->teams),
+            'created_at' => $plan->created_at->format('d.m.Y. H:i'),
+            'teams' => $this->formatTeams($plan->teams),
         ];
     }
 
     private function formatTeams($teams): array
     {
         return $teams->map(fn ($t) => [
-            'id'      => $t->id,
-            'name'    => $t->name,
+            'id' => $t->id,
+            'name' => $t->name,
             'workers' => $t->workers->map(fn ($w) => ['id' => $w->id, 'name' => $w->name])->values(),
         ])->values()->all();
     }
@@ -511,43 +512,43 @@ class MpmApiController extends Controller
 
     public function pendingOrders(): JsonResponse
     {
-        $orders = \App\Models\WorkOrder::where('status', \App\Models\WorkOrder::STATUS_SUBMITTED)
+        $orders = WorkOrder::where('status', WorkOrder::STATUS_SUBMITTED)
             ->with(['project.city', 'creator', 'plan', 'items'])
             ->orderBy('created_at')
             ->get()
             ->map(fn ($o) => [
-                'id'          => $o->id,
-                'name'        => $o->order_label,
+                'id' => $o->id,
+                'name' => $o->order_label,
                 'description' => $o->description,
-                'date'        => $o->date->format('d.m.Y.'),
-                'created_by'  => $o->creator?->name,
-                'plan_version'=> $o->plan?->version,
-                'project'     => [
-                    'id'   => $o->project->id,
+                'date' => $o->date->format('d.m.Y.'),
+                'created_by' => $o->creator?->name,
+                'plan_version' => $o->plan?->version,
+                'project' => [
+                    'id' => $o->project->id,
                     'name' => $o->project->name,
                     'city' => $o->project->city?->name,
                 ],
                 'items_count' => $o->items->count(),
-                'items'       => $o->items->map(fn ($i) => [
-                    'id'            => $i->id,
+                'items' => $o->items->map(fn ($i) => [
+                    'id' => $i->id,
                     'resource_type' => $i->resource_type,
                     'resource_name' => $i->resource_name,
-                    'quantity'      => (float) $i->quantity,
-                    'unit'          => $i->unit,
+                    'quantity' => (float) $i->quantity,
+                    'unit' => $i->unit,
                 ]),
             ]);
 
         return response()->json(['orders' => $orders, 'count' => $orders->count()]);
     }
 
-    public function approveOrder(\App\Models\WorkOrder $order): JsonResponse
+    public function approveOrder(WorkOrder $order): JsonResponse
     {
-        if ($order->status !== \App\Models\WorkOrder::STATUS_SUBMITTED) {
+        if ($order->status !== WorkOrder::STATUS_SUBMITTED) {
             return response()->json(['message' => 'Nalog nije podnesen na odobrenje.'], 422);
         }
 
         $order->update([
-            'status'      => \App\Models\WorkOrder::STATUS_APPROVED,
+            'status' => WorkOrder::STATUS_APPROVED,
             'reviewed_by' => Auth::id(),
             'reviewed_at' => now(),
             'review_note' => null,
@@ -557,31 +558,23 @@ class MpmApiController extends Controller
         $order->load(['creator', 'project', 'reviewer', 'items']);
         $order->creator?->notify(new OrderApprovedNotification($order));
 
-        // Auto-create purchase order for procurement
-        $purchaseOrder = \App\Models\PurchaseOrder::create([
-            'work_order_id' => $order->id,
-            'status'        => \App\Models\PurchaseOrder::STATUS_KREIRANA,
-            'created_by'    => Auth::id(),
-        ]);
-        $purchaseOrder->load(['workOrder.project', 'workOrder.items']);
-
-        // Notify all nabavka users
+        // Notify all nabavka users about the approved work order
         User::where('role', 'nabavka')->get()
-            ->each(fn ($u) => $u->notify(new PurchaseOrderCreatedNotification($purchaseOrder)));
+            ->each(fn ($u) => $u->notify(new WorkOrderReadyForProcurementNotification($order)));
 
         return response()->json(['message' => 'Nalog je odobren.']);
     }
 
-    public function rejectOrder(Request $request, \App\Models\WorkOrder $order): JsonResponse
+    public function rejectOrder(Request $request, WorkOrder $order): JsonResponse
     {
-        if ($order->status !== \App\Models\WorkOrder::STATUS_SUBMITTED) {
+        if ($order->status !== WorkOrder::STATUS_SUBMITTED) {
             return response()->json(['message' => 'Nalog nije podnesen na odobrenje.'], 422);
         }
 
         $data = $request->validate(['note' => 'required|string|max:500']);
 
         $order->update([
-            'status'      => \App\Models\WorkOrder::STATUS_REJECTED,
+            'status' => WorkOrder::STATUS_REJECTED,
             'reviewed_by' => Auth::id(),
             'reviewed_at' => now(),
             'review_note' => $data['note'],
@@ -594,4 +587,3 @@ class MpmApiController extends Controller
         return response()->json(['message' => 'Nalog je odbijen.']);
     }
 }
-

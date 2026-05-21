@@ -11,10 +11,10 @@ class ProjectService extends Model
     protected $fillable = ['name', 'category', 'unit', 'description'];
 
     public const CATEGORIES = [
-        'transport'  => 'Transport',
-        'najam'      => 'Najam opreme',
+        'transport' => 'Transport',
+        'najam' => 'Najam opreme',
         'odrzavanje' => 'Održavanje',
-        'ostalo'     => 'Ostalo',
+        'ostalo' => 'Ostalo',
     ];
 
     public const UNITS = ['sat', 'dan', 'tjedan', 'kom', 'km'];

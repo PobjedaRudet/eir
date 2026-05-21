@@ -64,3 +64,12 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+[data-flux-menu] {
+    background-color: var(--color-zinc-100) !important;
+}
+
+.dark [data-flux-menu] {
+    background-color: var(--color-zinc-800) !important;
+    border-color: var(--color-zinc-600) !important;
+}

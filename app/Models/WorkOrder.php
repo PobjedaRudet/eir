@@ -8,10 +8,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WorkOrder extends Model
 {
-    const STATUS_DRAFT     = 'draft';
+    const STATUS_DRAFT = 'draft';
+
     const STATUS_SUBMITTED = 'submitted';
-    const STATUS_APPROVED  = 'approved';
-    const STATUS_REJECTED  = 'rejected';
+
+    const STATUS_APPROVED = 'approved';
+
+    const STATUS_REJECTED = 'rejected';
 
     protected $fillable = [
         'project_id', 'plan_id', 'name', 'description', 'date', 'created_by',
@@ -20,18 +23,19 @@ class WorkOrder extends Model
     ];
 
     protected $casts = [
-        'date'         => 'date',
-        'reviewed_at'  => 'datetime',
+        'date' => 'date',
+        'reviewed_at' => 'datetime',
         'order_number' => 'integer',
-        'order_year'   => 'integer',
+        'order_year' => 'integer',
     ];
 
     public function getOrderLabelAttribute(): string
     {
         if ($this->order_number && $this->order_year) {
-            return $this->order_number . '/' . substr((string) $this->order_year, -2);
+            return $this->order_number.'/'.substr((string) $this->order_year, -2);
         }
-        return $this->name ?? '#' . $this->id;
+
+        return $this->name ?? '#'.$this->id;
     }
 
     public function project(): BelongsTo

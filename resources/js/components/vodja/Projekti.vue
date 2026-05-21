@@ -6,20 +6,58 @@
 
     <div v-if="loading" class="text-center py-12 text-zinc-500">Učitavanje...</div>
 
-    <div
-      v-else-if="projects.length === 0"
-      class="text-center py-12 border border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl"
-    >
-      <svg class="mx-auto size-12 text-neutral-400 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />
-      </svg>
-      <p class="text-lg font-semibold text-zinc-800 dark:text-zinc-200">Nema projekata</p>
-      <p class="mt-1 text-sm text-zinc-500">Projekti se kreiraju od strane projekt menadžera.</p>
-    </div>
+    <template v-else>
+      <!-- Filters -->
+      <div v-if="projects.length" class="mb-5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-3 shadow-sm">
+        <div class="flex flex-col sm:flex-row gap-3">
+          <div class="flex-1 min-w-0">
+            <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">Projekat</label>
+            <select v-model="filter.project_id" class="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm text-zinc-800 dark:text-zinc-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Svi projekti</option>
+              <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+            </select>
+          </div>
+          <div class="w-full sm:w-40">
+            <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">Od datuma</label>
+            <input type="date" v-model="filter.date_from" class="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm text-zinc-800 dark:text-zinc-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div class="w-full sm:w-40">
+            <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">Do datuma</label>
+            <input type="date" v-model="filter.date_to" class="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-sm text-zinc-800 dark:text-zinc-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div class="flex items-end">
+            <button
+              v-if="hasFilter"
+              type="button"
+              @click="clearFilter"
+              class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 transition-colors"
+            >
+              <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+              </svg>
+              Resetuj
+            </button>
+          </div>
+        </div>
+        <p v-if="hasFilter" class="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
+          Prikazano {{ filteredProjects.length }} od {{ projects.length }} projekata
+        </p>
+      </div>
 
-    <div v-else class="space-y-4">
       <div
-        v-for="project in projects"
+        v-if="filteredProjects.length === 0"
+        class="text-center py-12 border border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl"
+      >
+        <svg class="mx-auto size-12 text-neutral-400 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />
+        </svg>
+        <p class="text-lg font-semibold text-zinc-800 dark:text-zinc-200">{{ hasFilter ? 'Nema rezultata' : 'Nema projekata' }}</p>
+        <p class="mt-1 text-sm text-zinc-500">{{ hasFilter ? 'Nijedan projekat ne odgovara odabranim filterima.' : 'Projekti se kreiraju od strane projekt menadžera.' }}</p>
+      </div>
+
+      <div v-else class="space-y-4">
+        <div
+          v-for="project in filteredProjects"
         :key="project.id"
         class="border border-neutral-200 dark:border-neutral-700 rounded-xl p-5 bg-white dark:bg-neutral-900"
       >
@@ -83,15 +121,46 @@
         </div>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { BASE } from '../../utils/base'
 
 const projects = ref([])
 const loading = ref(true)
+
+const today = new Date().toISOString().slice(0, 10)
+const filter = reactive({ project_id: '', date_from: today, date_to: '' })
+
+// API returns dates as "dd.mm.YYYY." — convert to "YYYY-MM-DD" for comparison
+function toISO(dateStr) {
+  if (!dateStr) return ''
+  const parts = dateStr.replace(/\.$/, '').split('.')
+  if (parts.length < 3) return ''
+  const [d, m, y] = parts
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
+}
+
+const filteredProjects = computed(() => {
+  return projects.value.filter(project => {
+    if (filter.project_id && project.id != filter.project_id) return false
+    const iso = toISO(project.date)
+    if (filter.date_from && iso < filter.date_from) return false
+    if (filter.date_to && iso > filter.date_to) return false
+    return true
+  })
+})
+
+const hasFilter = computed(() => !!(filter.project_id || filter.date_from || filter.date_to))
+
+function clearFilter() {
+  filter.project_id = ''
+  filter.date_from = ''
+  filter.date_to = ''
+}
 
 onMounted(async () => {
   try {

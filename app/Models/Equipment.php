@@ -11,10 +11,10 @@ class Equipment extends Model
 
     // category labels
     public const CATEGORIES = [
-        'masina'    => 'Mašine',
-        'wc'        => 'WC',
+        'masina' => 'Mašine',
+        'wc' => 'WC',
         'kontejner' => 'Kontejneri',
-        'ostalo'    => 'Ostalo',
+        'ostalo' => 'Ostalo',
     ];
 
     public function projects(): BelongsToMany

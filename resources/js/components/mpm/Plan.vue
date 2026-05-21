@@ -47,7 +47,7 @@
       <div v-if="showCreateForm"
            class="mb-6 p-5 rounded-xl border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20">
         <h2 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-4">
-          {{ plan ? 'Nova verzija plana' : 'Kreiraj radni plan' }}
+          Kreiraj radni plan
         </h2>
 
         <!-- Description -->
@@ -110,7 +110,7 @@
         <div class="flex gap-2">
           <button @click="createPlan" :disabled="creating"
                   class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-50">
-            {{ creating ? 'Kreiranje...' : (plan ? 'Kreiraj novu verziju' : 'Kreiraj plan') }}
+            {{ creating ? 'Kreiranje...' : 'Kreiraj plan' }}
           </button>
           <button @click="showCreateForm = false; createError = ''"
                   class="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
@@ -132,13 +132,7 @@
             <p v-if="plan.description" class="text-sm text-green-800 dark:text-green-300 mt-1 italic">"{{ plan.description }}"</p>
             <p class="text-xs text-green-600 dark:text-green-500 mt-1">Kreiran: {{ plan.created_at }}</p>
           </div>
-          <button v-if="!showCreateForm" @click="initNewVersion"
-                  class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-300 dark:border-green-700 text-xs font-medium text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors">
-            <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-            </svg>
-            Nova verzija
-          </button>
+
         </div>
 
         <!-- Teams list -->
@@ -213,8 +207,11 @@
           </div>
         </div>
         <button v-else-if="!showCreateForm" @click="startEditTeams"
-                class="mt-3 text-xs font-medium text-green-600 dark:text-green-400 hover:underline">
-          ✎ Uredi timove
+                class="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-300 dark:border-green-700 text-xs font-medium text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors">
+          <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M2.695 14.763l-1.262 3.154a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.885L17.5 5.5a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.885 1.343Z" />
+          </svg>
+          Uredi timove
         </button>
       </div>
     </template>
@@ -260,16 +257,6 @@ function makeTeam(name = '', worker_ids = []) {
 function initCreateForm() {
   createForm.description = ''
   createForm.teams = [makeTeam('Tim 1')]
-  createError.value = ''
-  showCreateForm.value = true
-}
-
-function initNewVersion() {
-  // Pre-fill with current plan's teams
-  createForm.description = plan.value?.description ?? ''
-  createForm.teams = plan.value?.teams?.length
-    ? plan.value.teams.map(t => makeTeam(t.name, t.workers.map(w => w.id)))
-    : [makeTeam('Tim 1')]
   createError.value = ''
   showCreateForm.value = true
 }

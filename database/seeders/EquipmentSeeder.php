@@ -24,8 +24,8 @@ class EquipmentSeeder extends Seeder
 
             // Kontejneri
             ['name' => 'Kontejner za alat',    'category' => 'kontejner'],
-            ['name' => 'Kontejner za odlaganje','category' => 'kontejner'],
-            ['name' => 'Kontejner-kancelarija','category' => 'kontejner'],
+            ['name' => 'Kontejner za odlaganje', 'category' => 'kontejner'],
+            ['name' => 'Kontejner-kancelarija', 'category' => 'kontejner'],
 
             // Ostalo
             ['name' => 'Agregat',              'category' => 'ostalo'],

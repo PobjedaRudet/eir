@@ -14,13 +14,15 @@ class ResourcePlanItem extends Model
 
     protected $casts = [
         'start_date' => 'date',
-        'end_date'   => 'date',
-        'quantity'   => 'float',
+        'end_date' => 'date',
+        'quantity' => 'float',
     ];
 
     const TYPE_EQUIPMENT = 'equipment';
-    const TYPE_MATERIAL  = 'material';
-    const TYPE_SERVICE   = 'service';
+
+    const TYPE_MATERIAL = 'material';
+
+    const TYPE_SERVICE = 'service';
 
     public function plan(): BelongsTo
     {

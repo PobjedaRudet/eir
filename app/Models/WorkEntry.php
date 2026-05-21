@@ -19,7 +19,7 @@ class WorkEntry extends Model
     ];
 
     protected $casts = [
-        'date'       => 'date',
+        'date' => 'date',
         'work_types' => 'array',
     ];
 
@@ -31,8 +31,8 @@ class WorkEntry extends Model
     ];
 
     const WORK_TYPES = [
-        'uvlačenje'      => 'Uvlačenje',
-        'iskop'          => 'Iskop',
+        'uvlačenje' => 'Uvlačenje',
+        'iskop' => 'Iskop',
         'otvaranje_rupa' => 'Otvaranje rupa',
     ];
 

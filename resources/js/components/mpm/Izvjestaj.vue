@@ -69,7 +69,7 @@
             <span class="text-xs opacity-60">{{ pg.city }}</span>
           </div>
           <span class="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
-            {{ pg.workers.length }} {{ pg.workers.length === 1 ? 'radnik' : pg.workers.length < 5 ? 'radnika' : 'radnika' }}
+            {{ pg.workers.length }} {{ pg.workers.length === 1 ? 'radnik' : 'radnika' }}
           </span>
           <span class="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
             {{ pg.workers.reduce((s, w) => s + w.entries.length, 0) }} unosa
@@ -216,7 +216,6 @@ const filters = reactive({
 const totalEntries = computed(() => days.value.reduce((s, d) => s + d.entries.length, 0))
 const totalOps = computed(() => days.value.reduce((s, d) => s + d.entries.reduce((ss, e) => ss + e.operations.length, 0), 0))
 
-// Regroup: project → worker → entries (sorted by date desc)
 const projectGroups = computed(() => {
   const allEntries = days.value.flatMap(d => d.entries.map(e => ({ ...e, date: d.date })))
 
@@ -256,7 +255,7 @@ async function loadReport() {
     if (filters.date_from) params.set('date_from', filters.date_from)
     if (filters.date_to) params.set('date_to', filters.date_to)
 
-    const res = await fetch(`${BASE}/api/vodja/report?${params}`, { headers: { 'Accept': 'application/json' } })
+    const res = await fetch(`${BASE}/api/mpm/report?${params}`, { headers: { 'Accept': 'application/json' } })
     const data = await res.json()
     days.value = data.days
     projects.value = data.projects

@@ -13,6 +13,7 @@ import MpmRadnici from './components/mpm/Radnici.vue'
 import MpmOprema from './components/mpm/Oprema.vue'
 import MpmOdobrenja from './components/mpm/Odobrenja.vue'
 import MpmPlan from './components/mpm/Plan.vue'
+import MpmIzvjestaj from './components/mpm/Izvjestaj.vue'
 import NotificationBell from './components/shared/NotificationBell.vue'
 import NabavkaDashboard from './components/nabavka/Dashboard.vue'
 
@@ -31,6 +32,7 @@ const components = {
     'vue-mpm-oprema': MpmOprema,
     'vue-mpm-odobrenja': MpmOdobrenja,
     'vue-mpm-plan': MpmPlan,
+    'vue-mpm-izvjestaj': MpmIzvjestaj,
     'vue-notification-bell': NotificationBell,
     'vue-nabavka-dashboard': NabavkaDashboard,
 }

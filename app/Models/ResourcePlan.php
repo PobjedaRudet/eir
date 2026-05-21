@@ -15,13 +15,16 @@ class ResourcePlan extends Model
 
     protected $casts = [
         'submitted_at' => 'datetime',
-        'reviewed_at'  => 'datetime',
+        'reviewed_at' => 'datetime',
     ];
 
-    const STATUS_DRAFT     = 'draft';
+    const STATUS_DRAFT = 'draft';
+
     const STATUS_SUBMITTED = 'submitted';
-    const STATUS_APPROVED  = 'approved';
-    const STATUS_REJECTED  = 'rejected';
+
+    const STATUS_APPROVED = 'approved';
+
+    const STATUS_REJECTED = 'rejected';
 
     public function project(): BelongsTo
     {

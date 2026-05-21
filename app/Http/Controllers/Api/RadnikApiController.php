@@ -42,6 +42,16 @@ class RadnikApiController extends Controller
                             ->pluck('name')
                             ->values();
 
+                        $subOps = collect($op->sub_operations ?? [])->map(function ($sub) {
+                            if (!empty($sub['photos'])) {
+                                $sub['photos'] = collect($sub['photos'])
+                                    ->map(fn ($p) => url('storage/' . $p))
+                                    ->values()
+                                    ->toArray();
+                            }
+                            return $sub;
+                        })->toArray();
+
                         return [
                             'id'             => $op->id,
                             'kind'           => $op->kind,
@@ -52,8 +62,11 @@ class RadnikApiController extends Controller
                             'address'        => $op->address,
                             'splajsovano'    => $op->splajsovano,
                             'aktivirano'     => $op->aktivirano,
-                            'sub_operations' => $op->sub_operations ?? [],
-                            'images_count'   => $op->images->count(),
+                            'sub_operations' => $subOps,
+                            'images'         => $op->images->map(fn ($img) => [
+                                'url'  => url('storage/' . $img->path),
+                                'name' => $img->original_name,
+                            ])->values(),
                         ];
                     }),
                 ];

@@ -14,7 +14,7 @@ class ResourcePlanHistory extends Model
     protected $fillable = ['plan_id', 'user_id', 'action', 'data', 'created_at'];
 
     protected $casts = [
-        'data'       => 'array',
+        'data' => 'array',
         'created_at' => 'datetime',
     ];
 

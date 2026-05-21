@@ -17,13 +17,13 @@ class OrderRejectedNotification extends Notification
     public function toDatabase(object $notifiable): array
     {
         return [
-            'type'         => 'order_rejected',
-            'order_id'     => $this->order->id,
-            'order_name'   => $this->order->order_label,
+            'type' => 'order_rejected',
+            'order_id' => $this->order->id,
+            'order_name' => $this->order->order_label,
             'project_name' => $this->order->project->name,
-            'reviewed_by'  => $this->order->reviewer->name,
-            'review_note'  => $this->order->review_note,
-            'message'      => "Nalog {$this->order->order_label} ({$this->order->project->name}) je odbijen. Razlog: {$this->order->review_note}",
+            'reviewed_by' => $this->order->reviewer->name,
+            'review_note' => $this->order->review_note,
+            'message' => "Nalog {$this->order->order_label} ({$this->order->project->name}) je odbijen. Razlog: {$this->order->review_note}",
         ];
     }
 }

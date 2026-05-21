@@ -2,6 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\PurchaseOrder;
+use App\Models\ResourcePlan;
+use App\Models\ResourcePlanItem;
+use App\Models\ServiceOrder;
+use App\Models\WorkOrder;
+use App\Models\WorkOrderItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -27,12 +33,12 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
 
-        Route::model('plan', \App\Models\ResourcePlan::class);
-        Route::model('item', \App\Models\ResourcePlanItem::class);
-        Route::model('order', \App\Models\WorkOrder::class);
-        Route::model('orderItem', \App\Models\WorkOrderItem::class);
-        Route::model('serviceOrder', \App\Models\ServiceOrder::class);
-        Route::model('purchaseOrder', \App\Models\PurchaseOrder::class);
+        Route::model('plan', ResourcePlan::class);
+        Route::model('item', ResourcePlanItem::class);
+        Route::model('order', WorkOrder::class);
+        Route::model('orderItem', WorkOrderItem::class);
+        Route::model('serviceOrder', ServiceOrder::class);
+        Route::model('purchaseOrder', PurchaseOrder::class);
     }
 
     /**

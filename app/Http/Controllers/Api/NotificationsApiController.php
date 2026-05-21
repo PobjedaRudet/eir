@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -18,15 +17,15 @@ class NotificationsApiController extends Controller
             ->limit(30)
             ->get()
             ->map(fn ($n) => [
-                'id'         => $n->id,
-                'data'       => $n->data,
-                'read_at'    => $n->read_at?->toIso8601String(),
+                'id' => $n->id,
+                'data' => $n->data,
+                'read_at' => $n->read_at?->toIso8601String(),
                 'created_at' => $n->created_at->toIso8601String(),
             ]);
 
         return response()->json([
             'notifications' => $notifications,
-            'unread_count'  => Auth::user()->unreadNotifications()->count(),
+            'unread_count' => Auth::user()->unreadNotifications()->count(),
         ]);
     }
 

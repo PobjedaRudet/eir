@@ -3,18 +3,18 @@
     <!-- Header -->
     <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-zinc-900 dark:text-white">IzvjeĹˇtaj operacija</h1>
-        <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Pregled izvrĹˇenih operacija radnika po danima</p>
+        <h1 class="text-2xl font-bold text-zinc-900 dark:text-white">Izvještaj operacija</h1>
+        <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Pregled izvršenih operacija radnika po danima</p>
       </div>
       <div v-if="days.length" class="flex flex-wrap items-center gap-2">
         <span class="px-2.5 py-0.5 text-xs font-medium rounded-full border border-neutral-200 dark:border-neutral-700 text-zinc-600 dark:text-zinc-300">
-          đź“… {{ days.length }} {{ days.length === 1 ? 'dan' : 'dana' }}
+          {{ days.length }} {{ days.length === 1 ? 'dan' : 'dana' }}
         </span>
         <span class="px-2.5 py-0.5 text-xs font-medium rounded-full border border-neutral-200 dark:border-neutral-700 text-zinc-600 dark:text-zinc-300">
-          đź“„ {{ totalEntries }} {{ totalEntries === 1 ? 'unos' : 'unosa' }}
+          {{ totalEntries }} {{ totalEntries === 1 ? 'unos' : 'unosa' }}
         </span>
         <span class="px-2.5 py-0.5 text-xs font-medium rounded-full border border-neutral-200 dark:border-neutral-700 text-zinc-600 dark:text-zinc-300">
-          đź”§ {{ totalOps }} operacija
+          {{ totalOps }} operacija
         </span>
       </div>
     </div>
@@ -26,7 +26,7 @@
           <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Projekat</label>
           <select v-model="filters.project_id" @change="loadReport" class="select-field">
             <option value="">Svi projekti</option>
-            <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }} â€” {{ p.city }}</option>
+            <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }} — {{ p.city }}</option>
           </select>
         </div>
         <div>
@@ -41,7 +41,7 @@
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="text-center py-12 text-zinc-500">UÄŤitavanje...</div>
+    <div v-if="loading" class="text-center py-12 text-zinc-500">Učitavanje...</div>
 
     <!-- Empty -->
     <div
@@ -55,7 +55,7 @@
       <p class="mt-1 text-sm text-zinc-500">Nema operacija za odabrani period i projekat.</p>
     </div>
 
-    <!-- Grouped by project â†’ worker -->
+    <!-- Grouped by project → worker -->
     <div v-else class="space-y-8">
       <div v-for="pg in projectGroups" :key="pg.project_id">
 
@@ -110,12 +110,12 @@
                     <span class="text-xs font-semibold text-zinc-600 dark:text-zinc-300">{{ formatDate(entry.date) }}</span>
                   </div>
                   <template v-if="entry.street">
-                    <span class="text-neutral-300 dark:text-neutral-600">Â·</span>
+                    <span class="text-neutral-300 dark:text-neutral-600">·</span>
                     <span class="text-xs text-neutral-500 dark:text-neutral-400">{{ entry.street }}</span>
                   </template>
                   <template v-if="entry.enclosure">
-                    <span class="text-neutral-300 dark:text-neutral-600">Â·</span>
-                    <span class="text-xs text-neutral-500 dark:text-neutral-400">KuÄ‡iĹˇte: {{ entry.enclosure }}</span>
+                    <span class="text-neutral-300 dark:text-neutral-600">·</span>
+                    <span class="text-xs text-neutral-500 dark:text-neutral-400">Kućište: {{ entry.enclosure }}</span>
                   </template>
                   <div class="ml-auto flex flex-wrap items-center gap-1">
                     <span class="px-2 py-0.5 text-xs rounded-full border border-neutral-200 dark:border-neutral-700 text-zinc-600 dark:text-zinc-300 font-mono">{{ entry.cable_type }}</span>
@@ -137,7 +137,7 @@
                         <span class="px-2 py-0.5 text-xs rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">Iskop</span>
                         <span v-if="op.excavation_type" class="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">{{ excavationTypes[op.excavation_type] ?? op.excavation_type }}</span>
                         <span v-if="op.dimensions" class="px-2 py-0.5 text-xs rounded-full border border-neutral-200 dark:border-neutral-700 text-zinc-600 dark:text-zinc-300 font-mono">{{ op.dimensions }}</span>
-                        <span v-if="op.meterage" class="px-2 py-0.5 text-xs rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-medium">â†” {{ parseFloat(op.meterage).toFixed(2) }} m</span>
+                        <span v-if="op.meterage" class="px-2 py-0.5 text-xs rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-medium">↔ {{ parseFloat(op.meterage).toFixed(2) }} m</span>
                       </template>
 
                       <template v-else-if="op.kind === 'upuhivanje'">
@@ -162,9 +162,9 @@
                         class="rounded-lg border border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-3"
                       >
                         <div class="flex flex-wrap items-center gap-2 mb-2">
-                          <span class="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">đź”§ {{ sub.type ?? 'HP+' }}</span>
+                          <span class="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">{{ sub.type ?? 'HP+' }}</span>
                           <span v-if="sub.meterage" class="text-sm text-neutral-600 dark:text-neutral-400">{{ parseFloat(sub.meterage).toFixed(2) }} m</span>
-                          <span v-if="sub.broj_kucice" class="text-sm text-neutral-500 dark:text-neutral-400">Â· KÄ‡. <strong>{{ sub.broj_kucice }}</strong></span>
+                          <span v-if="sub.broj_kucice" class="text-sm text-neutral-500 dark:text-neutral-400">· Kć. <strong>{{ sub.broj_kucice }}</strong></span>
                         </div>
                         <div v-if="sub.photos?.length" class="flex flex-wrap gap-2 mt-2">
                           <a v-for="(photo, pi) in sub.photos" :key="pi" :href="`${BASE}/storage/${photo}`" target="_blank" class="block">
@@ -243,7 +243,7 @@ const projectGroups = computed(() => {
 
 function formatDate(dateStr) {
   const d = new Date(dateStr)
-  const days = ['Ned', 'Pon', 'Uto', 'Sri', 'ÄŚet', 'Pet', 'Sub']
+  const days = ['Ned', 'Pon', 'Uto', 'Sri', 'et', 'Pet', 'Sub']
   return `${days[d.getDay()]}, ${d.toLocaleDateString('bs-BA')}`
 }
 

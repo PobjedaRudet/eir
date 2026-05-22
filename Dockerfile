@@ -1,7 +1,21 @@
 # syntax=docker/dockerfile:1
 
-FROM composer:2 AS vendor
+FROM php:8.3-cli-bookworm AS vendor
 WORKDIR /app
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libfreetype6-dev \
+        libjpeg62-turbo-dev \
+        libzip-dev \
+        libpng-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" \
+        gd \
+        zip \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY composer.json composer.lock ./
 RUN composer install \
@@ -33,6 +47,7 @@ RUN npm run build
 FROM php:8.3-apache-bookworm AS runtime
 
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public \
+    APP_NAME=EIR \
     APP_ENV=production \
     APP_DEBUG=false \
     LOG_CHANNEL=stderr \
@@ -42,13 +57,18 @@ ENV APACHE_DOCUMENT_ROOT=/var/www/html/public \
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
+        libfreetype6-dev \
+        libjpeg62-turbo-dev \
         libicu-dev \
         libpq-dev \
+        libpng-dev \
         libsqlite3-dev \
         libzip-dev \
         unzip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" \
         bcmath \
+        gd \
         intl \
         pdo_mysql \
         pdo_pgsql \

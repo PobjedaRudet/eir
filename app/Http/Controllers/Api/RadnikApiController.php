@@ -78,6 +78,8 @@ class RadnikApiController extends Controller
     public function formConfig(): JsonResponse
     {
         $projects = Project::with(['city', 'streets'])
+            ->where('status', Project::STATUS_AKTIVAN)
+            ->whereHas('workers', fn ($q) => $q->where('users.id', Auth::id()))
             ->latest()
             ->get()
             ->map(fn (Project $p) => [
@@ -121,6 +123,19 @@ class RadnikApiController extends Controller
             'operations.*.sub_operations.*.meterage'      => 'nullable|numeric|min:0.01',
             'operations.*.sub_operations.*.broj_kucice'   => 'nullable|string|max:50',
         ]);
+
+        $assignedProject = Project::query()
+            ->where('id', $data['project_id'])
+            ->whereHas('workers', fn ($q) => $q->where('users.id', Auth::id()))
+            ->exists();
+
+        if (! $assignedProject) {
+            return response()->json([
+                'errors' => [
+                    'project_id' => ['Nemate pristup odabranom projektu.'],
+                ],
+            ], 422);
+        }
 
         // Per-operation kind validation
         foreach ($data['operations'] as $i => $op) {

@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Auth;
 
 class VodjaApiController extends Controller
 {
-    // â”€â”€â”€ Projects â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Projects ────────────────────────────────────────────────────────────
 
     public function projects(): JsonResponse
     {
@@ -93,7 +93,7 @@ class VodjaApiController extends Controller
             ->first();
 
         if ($existing) {
-            $label = $existing->status === ResourcePlan::STATUS_DRAFT ? 'nacrt' : 'plan na ÄŤekanju odobrenja';
+            $label = $existing->status === ResourcePlan::STATUS_DRAFT ? 'nacrt' : 'plan na čekanju odobrenja';
             return response()->json(['message' => "Postoji aktivan {$label}. Podnijeti ili obrisati ga."], 422);
         }
 
@@ -198,11 +198,11 @@ class VodjaApiController extends Controller
         };
 
         if (!$name) {
-            return response()->json(['message' => 'Resurs nije pronaÄ‘en.'], 422);
+            return response()->json(['message' => 'Resurs nije pronađen.'], 422);
         }
 
         if ($plan->items()->where('resource_type', $data['resource_type'])->where('resource_id', $data['resource_id'])->exists()) {
-            return response()->json(['message' => 'Ovaj resurs je veÄ‡ u planu.'], 422);
+            return response()->json(['message' => 'Ovaj resurs je već u planu.'], 422);
         }
 
         $item = $plan->items()->create([
@@ -243,7 +243,7 @@ class VodjaApiController extends Controller
 
         $item->update($data);
 
-        return response()->json(['message' => 'Stavka je aĹľurirana.']);
+        return response()->json(['message' => 'Stavka je aLlurirana.']);
     }
 
     public function removePlanItem(ResourcePlan $plan, ResourcePlanItem $item): JsonResponse
@@ -295,7 +295,7 @@ class VodjaApiController extends Controller
     public function discardPlan(ResourcePlan $plan): JsonResponse
     {
         if ($plan->status !== ResourcePlan::STATUS_DRAFT) {
-            return response()->json(['message' => 'MoĹľe se obrisati samo nacrt.'], 422);
+            return response()->json(['message' => 'MoLle se obrisati samo nacrt.'], 422);
         }
 
         $plan->delete();
@@ -303,7 +303,7 @@ class VodjaApiController extends Controller
         return response()->json(['message' => 'Nacrt plana je obrisan.']);
     }
 
-    // â”€â”€â”€ Report (unchanged) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Report (unchanged) ───────────────────────────────────────────────────
 
     public function report(Request $request): JsonResponse
     {
@@ -375,7 +375,7 @@ class VodjaApiController extends Controller
         ]);
     }
 
-    // ─── Work Orders ──────────────────────────────────────────────────────────
+    // --- Work Orders ----------------------------------------------------------
 
     public function projectOrders(Project $project): JsonResponse
     {
@@ -465,7 +465,7 @@ class VodjaApiController extends Controller
     public function deleteOrder(WorkOrder $order): JsonResponse
     {
         if (! in_array($order->status, [WorkOrder::STATUS_DRAFT, WorkOrder::STATUS_REJECTED])) {
-            return response()->json(['message' => 'Nije moguće obrisati nalog koji je podnesen ili odobren.'], 422);
+            return response()->json(['message' => 'Nije moguce obrisati nalog koji je podnesen ili odobren.'], 422);
         }
         $order->delete();
         return response()->json(['ok' => true]);
@@ -509,7 +509,7 @@ class VodjaApiController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    // ─── Service Orders ──────────────────────────────────────────────────────
+    // --- Service Orders ------------------------------------------------------
 
     public function projectServiceOrders(Project $project): JsonResponse
     {
@@ -558,7 +558,7 @@ class VodjaApiController extends Controller
             ->sum('quantity_sent');
 
         if ($qtySent + $validated['quantity_sent'] > $item->quantity) {
-            return response()->json(['message' => 'Tražena količina prelazi dostupnu količinu.'], 422);
+            return response()->json(['message' => 'Tražena kolicina prelazi dostupnu kolicinu.'], 422);
         }
 
         $so = ServiceOrder::create([

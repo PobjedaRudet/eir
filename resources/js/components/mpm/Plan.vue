@@ -198,7 +198,7 @@
           <div class="flex gap-2">
             <button @click="saveTeams" :disabled="savingTeams"
                     class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors disabled:opacity-50">
-              {{ savingTeams ? 'ÄŚuvanje...' : 'SaÄŤuvaj timove' }}
+              {{ savingTeams ? 'uvanje...' : 'Sačuvaj timove' }}
             </button>
             <button @click="editingTeams = false"
                     class="px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-600 text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
@@ -279,7 +279,7 @@ async function loadPlan() {
     plan.value           = data.plan
     projectWorkers.value = data.project_workers ?? []
   } catch {
-    serverError.value = 'GreĹˇka pri uÄŤitavanju plana.'
+    serverError.value = 'Greška pri učitavanju plana.'
   } finally {
     loading.value = false
   }
@@ -311,7 +311,7 @@ async function createPlan() {
       }),
     })
     const data = await res.json()
-    if (!res.ok) { createError.value = data.message ?? 'GreĹˇka.'; return }
+    if (!res.ok) { createError.value = data.message ?? 'Greška.'; return }
     plan.value = data.plan
     showCreateForm.value = false
   } finally {

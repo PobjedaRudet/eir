@@ -2,7 +2,7 @@
   <div>
     <div class="mb-8">
       <h1 class="text-2xl font-bold text-zinc-900 dark:text-white">PM Portal</h1>
-      <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">DobrodoĹˇli, menadĹľeru projekata. Odaberite akciju ispod.</p>
+      <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Dobrodošli, menadžeru projekata. Odaberite akciju ispod.</p>
     </div>
 
     <!-- Aktivne funkcije -->
@@ -92,12 +92,12 @@
             </div>
             <span class="text-base font-semibold text-zinc-900 dark:text-white">Odobrenja</span>
           </div>
-          <p class="text-sm text-zinc-500 dark:text-zinc-400">Pregledajte i odobrite planove resursa koje su podnijeli voÄ‘e.</p>
+          <p class="text-sm text-zinc-500 dark:text-zinc-400">Pregledajte i odobrite planove resursa koje su podnijeli vođe.</p>
         </a>
       </div>
     </div>
 
-    <!-- Placeholder za buduÄ‡e funkcije -->
+    <!-- Placeholder za buduće funkcije -->
     <div>
       <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-3">Uskoro dostupno</h2>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -130,8 +130,8 @@ import { BASE } from '../../utils/base'
 
 const upcomingFeatures = [
   {
-    label: 'IzvjeĹˇtaji',
-    description: 'Pregled i export izvjeĹˇtaja po projektima i radnicima.',
+    label: 'Izvještaji',
+    description: 'Pregled i export izvještaja po projektima i radnicima.',
     icon: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z',
   },
   {

@@ -12,7 +12,7 @@
       <h1 class="text-2xl font-bold text-zinc-900 dark:text-white">Novi projekat</h1>
     </div>
 
-    <div v-if="configLoading" class="text-center py-12 text-zinc-500">UÄŤitavanje...</div>
+    <div v-if="configLoading" class="text-center py-12 text-zinc-500">Učitavanje...</div>
 
     <form v-else @submit.prevent="save" class="space-y-6">
 
@@ -42,13 +42,13 @@
 
       <!-- Ulice -->
       <template v-if="form.city_id">
-        <div v-if="streetsLoading" class="text-sm text-zinc-500">UÄŤitavanje ulica...</div>
+        <div v-if="streetsLoading" class="text-sm text-zinc-500">Učitavanje ulica...</div>
         <div v-else-if="streets.length === 0" class="p-4 rounded-lg border border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300 text-sm flex items-center gap-2">
-          âš  Nema ulica za izabrani grad.
+          ⚠ Nema ulica za izabrani grad.
         </div>
         <div v-else>
           <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-            Ulice projekta <span class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500">odaberite jednu ili viĹˇe</span>
+            Ulice projekta <span class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500">odaberite jednu ili više</span>
           </label>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <label
@@ -67,7 +67,7 @@
 
       <div class="flex items-center gap-3 pt-2">
         <button type="submit" :disabled="saving" class="btn-primary">
-          {{ saving ? 'ÄŚuvanje...' : 'SaÄŤuvaj projekat' }}
+          {{ saving ? 'uvanje...' : 'Sačuvaj projekat' }}
         </button>
         <a :href="BASE + '/pm/projekti'" class="btn-secondary">Odustani</a>
       </div>
@@ -109,9 +109,9 @@ async function onCityChange() {
 
   try {
     const res = await fetch(`${BASE}/api/pm/cities/${form.city_id}/streets`, { headers: { 'Accept': 'application/json' } })
-    streets.value = await getJsonOrThrow(res, 'Ne mogu uÄŤitati ulice za izabrani grad.')
+    streets.value = await getJsonOrThrow(res, 'Ne mogu učitati ulice za izabrani grad.')
   } catch (error) {
-    serverError.value = error instanceof Error ? error.message : 'Ne mogu uÄŤitati ulice za izabrani grad.'
+    serverError.value = error instanceof Error ? error.message : 'Ne mogu učitati ulice za izabrani grad.'
   } finally {
     streetsLoading.value = false
   }
@@ -144,7 +144,7 @@ async function save() {
       if (res.status === 422 && json.errors) {
         errors.value = json.errors
       } else {
-        serverError.value = json.message ?? 'GreĹˇka pri ÄŤuvanju.'
+        serverError.value = json.message ?? 'Greška pri čuvanju.'
       }
       return
     }
@@ -176,10 +176,10 @@ onMounted(async () => {
 
   try {
     const res = await fetch(BASE + '/api/pm/project-form-config', { headers: { 'Accept': 'application/json' } })
-    const data = await getJsonOrThrow(res, 'Ne mogu uÄŤitati gradove iz baze.')
+    const data = await getJsonOrThrow(res, 'Ne mogu učitati gradove iz baze.')
     cities.value = data.cities
   } catch (error) {
-    serverError.value = error instanceof Error ? error.message : 'Ne mogu uÄŤitati gradove iz baze.'
+    serverError.value = error instanceof Error ? error.message : 'Ne mogu učitati gradove iz baze.'
   } finally {
     configLoading.value = false
   }

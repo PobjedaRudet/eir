@@ -12,7 +12,7 @@ Route::view('/', 'welcome')->name('home');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
 
-    // Notifications (shared â€” all roles)
+    // Notifications (shared — all roles)
     Route::prefix('api/notifications')->group(function () {
         Route::get('/', [NotificationsApiController::class, 'index']);
         Route::post('/read-all', [NotificationsApiController::class, 'markAllRead']);
@@ -20,7 +20,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-// VoÄ‘a projekta
+// Vođa projekta
 Route::middleware(['auth', 'verified', 'role:vodja'])->group(function () {
     Route::view('vodja/projekti', 'pages.vodja.projekti')->name('vodja.projekti');
     Route::view('vodja/izvjestaj', 'pages.vodja.izvjestaj')->name('vodja.izvjestaj');
@@ -68,7 +68,7 @@ Route::middleware(['auth', 'verified', 'role:radnik'])->group(function () {
     });
 });
 
-// MenadĹľer projekata (MPM)
+// MenadLler projekata (MPM)
 Route::middleware(['auth', 'verified', 'role:mpm'])->group(function () {
     // Backward-compatibility aliases for old MPM URLs.
     Route::redirect('mpm/portal', 'pm/portal', 301);

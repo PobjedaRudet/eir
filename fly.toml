@@ -5,6 +5,7 @@ primary_region = "fra"
   dockerfile = "Dockerfile"
 
 [env]
+  APP_NAME = "EIR"
   APP_ENV = "production"
   APP_DEBUG = "false"
   APP_URL = "https://eir.fly.dev"

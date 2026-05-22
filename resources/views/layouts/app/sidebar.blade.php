@@ -16,7 +16,7 @@
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('Navigacija')" class="grid">
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('PoÄŤetna') }}
+                        {{ __('Početna') }}
                     </flux:sidebar.item>
 
                     @auth
@@ -31,7 +31,7 @@
                                 {{ __('Servisni nalozi') }}
                             </flux:sidebar.item>
                             <flux:sidebar.item icon="chart-bar" :href="route('vodja.izvjestaj')" :current="request()->routeIs('vodja.izvjestaj')" wire:navigate>
-                                {{ __('IzvjeĹˇtaj') }}
+                                {{ __('Izvještaj') }}
                             </flux:sidebar.item>
                         @elseif(auth()->user()->isMpm())
                             <flux:sidebar.item icon="rectangle-stack" :href="route('pm.portal')" :current="request()->routeIs('pm.portal')" wire:navigate>
@@ -47,7 +47,7 @@
                                 {{ __('Odobrenja') }}
                             </flux:sidebar.item>
                             <flux:sidebar.item icon="chart-bar" :href="route('pm.izvjestaj')" :current="request()->routeIs('pm.izvjestaj')" wire:navigate>
-                                {{ __('IzvjeĹˇtaj') }}
+                                {{ __('Izvještaj') }}
                             </flux:sidebar.item>
                         @elseif(auth()->user()->isRadnik())
                             <flux:sidebar.item icon="clipboard-document-list" :href="route('radnik.unosi')" :current="request()->routeIs('radnik.unosi')" wire:navigate>
@@ -58,7 +58,7 @@
                             </flux:sidebar.item>
                         @elseif(auth()->user()->isNabavka())
                             <flux:sidebar.item icon="shopping-cart" :href="route('nabavka.dashboard')" :current="request()->routeIs('nabavka.dashboard')" wire:navigate>
-                                {{ __('NarudĹľbenice') }}
+                                {{ __('Narudžbenice') }}
                             </flux:sidebar.item>
                         @endif
                     @endauth

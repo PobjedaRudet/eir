@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between mb-6">
       <div>
         <h1 class="text-2xl font-bold text-zinc-900 dark:text-white">Katalog resursa</h1>
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">Upravljajte opremom, materijalima i servisima.</p>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">Upravljajte opremom i materijalima.</p>
       </div>
     </div>
 
@@ -135,13 +135,11 @@ import { BASE } from '../../utils/base'
 const tabs = [
   { key: 'equipment', label: 'Oprema' },
   { key: 'material',  label: 'Materijali' },
-  { key: 'service',   label: 'Servisi' },
 ]
 
 const tabConfig = {
   equipment: { apiBase: `${BASE}/api/pm/equipment`,  hasUnit: false },
   material:  { apiBase: `${BASE}/api/pm/materials`,  hasUnit: true  },
-  service:   { apiBase: `${BASE}/api/pm/services`,   hasUnit: true  },
 }
 
 // ¦¦ State ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦
@@ -151,8 +149,8 @@ const saving      = ref(false)
 const deleting    = ref(false)
 const formError   = ref('')
 
-const catalogData = reactive({ equipment: [], material: [], service: [] })
-const metaData    = reactive({ equipment: { categories: [], units: [] }, material: { categories: [], units: [] }, service: { categories: [], units: [] } })
+const catalogData = reactive({ equipment: [], material: [] })
+const metaData    = reactive({ equipment: { categories: [], units: [] }, material: { categories: [], units: [] } })
 
 const editingId   = ref(null)
 const deleteTarget = ref(null)

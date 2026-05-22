@@ -46,7 +46,7 @@ function mountVueApps() {
     })
 }
 
-// Initial mount (type="module" scripts are deferred â€” DOM is ready)
+// Initial mount (type="module" scripts are deferred — DOM is ready)
 mountVueApps()
 
 // Re-mount after Livewire wire:navigate replaces the DOM (Flux uses this internally)

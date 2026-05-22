@@ -38,10 +38,10 @@
           ? 'bg-white dark:bg-neutral-700 text-zinc-900 dark:text-white shadow-sm'
           : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'"
         class="px-4 py-1.5 text-sm font-medium rounded-md transition-all"
-      >ZakljuÄŤeni</button>
+      >Zaključeni</button>
     </div>
 
-    <div v-if="loading" class="text-center py-12 text-zinc-500">UÄŤitavanje...</div>
+    <div v-if="loading" class="text-center py-12 text-zinc-500">Učitavanje...</div>
 
     <div
       v-else-if="projects.length === 0"
@@ -50,7 +50,7 @@
       <svg class="mx-auto size-12 text-neutral-400 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />
       </svg>
-      <p class="text-lg font-semibold text-zinc-800 dark:text-zinc-200">Nema {{ tab === 'aktivan' ? 'aktivnih' : 'zakljuÄŤenih' }} projekata</p>
+      <p class="text-lg font-semibold text-zinc-800 dark:text-zinc-200">Nema {{ tab === 'aktivan' ? 'aktivnih' : 'zaključenih' }} projekata</p>
       <p v-if="tab === 'aktivan'" class="mt-1 text-sm text-zinc-500">Kreirajte prvi projekat klikom na dugme iznad.</p>
     </div>
 
@@ -73,7 +73,7 @@
             <span
               v-if="project.status === 'zakljucen'"
               class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-400"
-            >ZakljuÄŤen</span>
+            >Zaključen</span>
             <span class="px-2.5 py-0.5 text-xs font-medium rounded-full border border-neutral-200 dark:border-neutral-700 text-zinc-600 dark:text-zinc-300">
               {{ project.entries_count }} {{ project.entries_count === 1 ? 'unos' : 'unosa' }}
             </span>
@@ -142,7 +142,7 @@
               <svg v-else class="size-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M14.5 1A4.5 4.5 0 0 0 10 5.5V9H3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-3V5.5A4.5 4.5 0 0 0 14.5 1Zm-4.5 8V5.5a3 3 0 1 1 6 0V9h-6Z" clip-rule="evenodd" />
               </svg>
-              {{ project.status === 'aktivan' ? 'ZakljuÄŤi' : 'Aktiviraj' }}
+              {{ project.status === 'aktivan' ? 'Zaključi' : 'Aktiviraj' }}
             </button>
           </div>
         </div>

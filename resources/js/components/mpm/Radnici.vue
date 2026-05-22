@@ -16,7 +16,7 @@
       </div>
     </div>
 
-    <div v-if="loading" class="text-center py-12 text-zinc-500">UÄŤitavanje...</div>
+    <div v-if="loading" class="text-center py-12 text-zinc-500">Učitavanje...</div>
 
     <div v-else-if="serverError" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">
       {{ serverError }}
@@ -38,7 +38,7 @@
       <!-- Worker list -->
       <div v-else>
         <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
-          Odaberite radnike koji su dodijeljeni ovom projektu. Promjene se ÄŤuvaju klikom na dugme.
+          Odaberite radnike koji su dodijeljeni ovom projektu. Promjene se čuvaju klikom na dugme.
         </p>
 
         <div class="space-y-2 mb-6">
@@ -74,7 +74,7 @@
             @click="save"
             class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            {{ saving ? 'ÄŚuvanje...' : 'SaÄŤuvaj promjene' }}
+            {{ saving ? 'uvanje...' : 'Sačuvaj promjene' }}
           </button>
           <a :href="BASE + '/pm/projekti'" class="px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-zinc-700 dark:text-zinc-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
             Odustani
@@ -83,7 +83,7 @@
             <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
             </svg>
-            SaÄŤuvano
+            Sačuvano
           </span>
         </div>
 
@@ -140,7 +140,7 @@ async function save() {
     const json = await res.json()
 
     if (!res.ok) {
-      saveError.value = json.message ?? 'GreĹˇka pri ÄŤuvanju.'
+      saveError.value = json.message ?? 'Greška pri čuvanju.'
       return
     }
 
@@ -154,7 +154,7 @@ async function save() {
 onMounted(async () => {
   const id = getProjectId()
   if (!id) {
-    serverError.value = 'Nije pronaÄ‘en ID projekta u URL-u.'
+    serverError.value = 'Nije pronađen ID projekta u URL-u.'
     loading.value = false
     return
   }
@@ -166,7 +166,7 @@ onMounted(async () => {
 
     if (!res.ok) {
       const json = await res.json().catch(() => null)
-      serverError.value = json?.message ?? 'GreĹˇka pri uÄŤitavanju radnika.'
+      serverError.value = json?.message ?? 'Greška pri učitavanju radnika.'
       return
     }
 
@@ -175,7 +175,7 @@ onMounted(async () => {
     available.value = data.available
     selected.value = data.assigned.map(w => w.id)
   } catch {
-    serverError.value = 'GreĹˇka pri uÄŤitavanju radnika.'
+    serverError.value = 'Greška pri učitavanju radnika.'
   } finally {
     loading.value = false
   }

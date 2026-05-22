@@ -276,8 +276,35 @@
             </div>
           </div>
 
-          <!-- Notes textarea when actioning -->
-          <div v-if="actioning[po.id]" class="px-5 pb-3">
+          <!-- Notes textarea when actioning (manual order) -->
+          <div v-if="actioning[po.id] === 'order'" class="px-5 pb-3">
+            <textarea v-model="notes[po.id]" rows="2"
+                      placeholder="Napomena (opcionalno)..."
+                      class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-sm text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+          </div>
+
+          <!-- Supplier form when sending by email -->
+          <div v-if="actioning[po.id] === 'send'" class="px-5 pb-3 space-y-2">
+            <div>
+              <label class="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">Naziv dobavljača</label>
+              <input type="text" v-model="supplierData[po.id].name" placeholder="Naziv firme (opcionalno)"
+                     class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-sm text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">Email dobavljača <span class="text-red-500">*</span></label>
+              <input type="email" v-model="supplierData[po.id].email" placeholder="dobavljac@firma.ba"
+                     class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-sm text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">Napomena</label>
+              <textarea v-model="notes[po.id]" rows="2"
+                        placeholder="Napomena za narudžbenicu (opcionalno)..."
+                        class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-sm text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+            </div>
+          </div>
+
+          <!-- Notes textarea when actioning (deliver) -->
+          <div v-if="actioning[po.id] === 'deliver'" class="px-5 pb-3">
             <textarea v-model="notes[po.id]" rows="2"
                       placeholder="Napomena (opcionalno)..."
                       class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-sm text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
@@ -288,7 +315,8 @@
 
             <!-- Kreirana → Naručena -->
             <template v-if="po.status === 'kreirana'">
-              <div v-if="actioning[po.id]" class="flex gap-2">
+              <!-- Confirm manual order -->
+              <div v-if="actioning[po.id] === 'order'" class="flex gap-2">
                 <button @click="confirmOrdered(po)" :disabled="busy[po.id]"
                         class="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-50">
                   {{ busy[po.id] ? 'šalje se...' : 'Potvrdi narudžbu' }}
@@ -298,18 +326,46 @@
                   Odustani
                 </button>
               </div>
-              <button v-else @click="startAction(po.id)"
-                      class="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2">
-                <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M3.105 2.288a.75.75 0 0 0-.826.95l1.414 4.926A1.5 1.5 0 0 0 5.135 9.25h6.115a.75.75 0 0 1 0 1.5H5.135a1.5 1.5 0 0 0-1.442 1.086l-1.414 4.926a.75.75 0 0 0 .826.95 28.897 28.897 0 0 0 15.293-7.154.75.75 0 0 0 0-1.115A28.897 28.897 0 0 0 3.105 2.288Z" />
-                </svg>
-                Označi kao naručenu
-              </button>
+              <!-- Confirm send to supplier -->
+              <div v-else-if="actioning[po.id] === 'send'" class="flex gap-2">
+                <button @click="confirmSendToSupplier(po)" :disabled="busy[po.id] || !supplierData[po.id]?.email"
+                        class="flex-1 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-colors disabled:opacity-50">
+                  {{ busy[po.id] ? 'Slanje...' : 'Pošalji PDF i naruči' }}
+                </button>
+                <button @click="cancelAction(po.id)"
+                        class="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                  Odustani
+                </button>
+              </div>
+              <!-- Default: show action buttons -->
+              <div v-else class="flex flex-col gap-2">
+                <button @click="startSendAction(po.id)"
+                        class="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                  <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M3.105 2.288a.75.75 0 0 0-.826.95l1.414 4.926A1.5 1.5 0 0 0 5.135 9.25h6.115a.75.75 0 0 1 0 1.5H5.135a1.5 1.5 0 0 0-1.442 1.086l-1.414 4.926a.75.75 0 0 0 .826.95 28.897 28.897 0 0 0 15.293-7.154.75.75 0 0 0 0-1.115A28.897 28.897 0 0 0 3.105 2.288Z" />
+                  </svg>
+                  Pošalji PDF dobavljaču
+                </button>
+                <div class="flex gap-2">
+                  <button @click="startAction(po.id, 'order')"
+                          class="flex-1 py-2 rounded-lg border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400 text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                    Samo označi kao naručenu
+                  </button>
+                  <a :href="`${BASE}/api/nabavka/purchase-orders/${po.id}/pdf`" target="_blank"
+                     class="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1.5">
+                    <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
+                      <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+                    </svg>
+                    PDF
+                  </a>
+                </div>
+              </div>
             </template>
 
             <!-- Naručena → Isporučena -->
             <template v-else-if="po.status === 'narucena'">
-              <div v-if="actioning[po.id]" class="flex gap-2">
+              <div v-if="actioning[po.id] === 'deliver'" class="flex gap-2">
                 <button @click="confirmDelivered(po)" :disabled="busy[po.id]"
                         class="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition-colors disabled:opacity-50">
                   {{ busy[po.id] ? 'šalje se...' : 'Potvrdi isporuku' }}
@@ -319,22 +375,57 @@
                   Odustani
                 </button>
               </div>
-              <button v-else @click="startAction(po.id)"
-                      class="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2">
-                <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10 1a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 1ZM5.05 3.05a.75.75 0 0 1 1.06 0l1.062 1.06A.75.75 0 1 1 6.11 5.173L5.05 4.11a.75.75 0 0 1 0-1.06Zm9.9 0a.75.75 0 0 1 0 1.06l-1.06 1.062a.75.75 0 0 1-1.062-1.061l1.061-1.061a.75.75 0 0 1 1.061 0Zm-9.95 6a4.5 4.5 0 0 1 8.285-2.434.75.75 0 0 1-1.298.752 3 3 0 1 0 .478 3.35.75.75 0 1 1 1.342.668A4.5 4.5 0 1 1 5 9.05Zm7.25 1.95a.75.75 0 0 1 .75-.75h2a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1-.75-.75Zm-9 0a.75.75 0 0 1 .75-.75h2a.75.75 0 0 1 0 1.5H4a.75.75 0 0 1-.75-.75Zm13.154 5.257a.75.75 0 0 1-1.06 0l-1.061-1.06a.75.75 0 1 1 1.06-1.062l1.061 1.061a.75.75 0 0 1 0 1.061Zm-10.243 0a.75.75 0 0 1 0-1.06l1.061-1.062a.75.75 0 0 1 1.062 1.061l-1.061 1.061a.75.75 0 0 1-1.062 0ZM10 15.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
+              <div v-else class="flex gap-2">
+                <button @click="startAction(po.id, 'deliver')"
+                        class="flex-1 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                  <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 1a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 1ZM5.05 3.05a.75.75 0 0 1 1.06 0l1.062 1.06A.75.75 0 1 1 6.11 5.173L5.05 4.11a.75.75 0 0 1 0-1.06Zm9.9 0a.75.75 0 0 1 0 1.06l-1.06 1.062a.75.75 0 0 1-1.062-1.061l1.061-1.061a.75.75 0 0 1 1.061 0Zm-9.95 6a4.5 4.5 0 0 1 8.285-2.434.75.75 0 0 1-1.298.752 3 3 0 1 0 .478 3.35.75.75 0 1 1 1.342.668A4.5 4.5 0 1 1 5 9.05Zm7.25 1.95a.75.75 0 0 1 .75-.75h2a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1-.75-.75Zm-9 0a.75.75 0 0 1 .75-.75h2a.75.75 0 0 1 0 1.5H4a.75.75 0 0 1-.75-.75Zm13.154 5.257a.75.75 0 0 1-1.06 0l-1.061-1.06a.75.75 0 1 1 1.06-1.062l1.061 1.061a.75.75 0 0 1 0 1.061Zm-10.243 0a.75.75 0 0 1 0-1.06l1.061-1.062a.75.75 0 0 1 1.062 1.061l-1.061 1.061a.75.75 0 0 1-1.062 0ZM10 15.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
+                  </svg>
+                  Označi kao isporučenu
+                </button>
+                <a :href="`${BASE}/api/nabavka/purchase-orders/${po.id}/pdf`" target="_blank"
+                   class="px-3 py-2.5 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1.5">
+                  <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
+                    <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+                  </svg>
+                  PDF
+                </a>
+              </div>
+              <!-- Show supplier info if order was sent by email -->
+              <div v-if="po.supplier_email" class="mt-2 flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500">
+                <svg class="size-3.5 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z" />
+                  <path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z" />
                 </svg>
-                Označi kao isporučenu
-              </button>
+                Poslano na: <span class="text-zinc-600 dark:text-zinc-300">{{ po.supplier_name ? po.supplier_name + ' (' + po.supplier_email + ')' : po.supplier_email }}</span>
+              </div>
             </template>
 
             <!-- Isporučena -->
             <template v-else>
-              <div class="flex items-center justify-center gap-2 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-4 text-emerald-600 dark:text-emerald-400">
-                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+              <div class="flex gap-2">
+                <div class="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-4 text-emerald-600 dark:text-emerald-400">
+                    <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Isporučeno</span>
+                </div>
+                <a :href="`${BASE}/api/nabavka/purchase-orders/${po.id}/pdf`" target="_blank"
+                   class="px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1.5">
+                  <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
+                    <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+                  </svg>
+                  PDF
+                </a>
+              </div>
+              <div v-if="po.supplier_email" class="mt-2 flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500">
+                <svg class="size-3.5 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z" />
+                  <path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z" />
                 </svg>
-                <span class="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Isporučeno</span>
+                Poslano na: <span class="text-zinc-600 dark:text-zinc-300">{{ po.supplier_name ? po.supplier_name + ' (' + po.supplier_email + ')' : po.supplier_email }}</span>
               </div>
             </template>
 
@@ -483,9 +574,10 @@ const orders        = ref([])
 const activeMainTab   = ref('nalozi')
 const activeStatusTab = ref('kreirana')
 
-const actioning = reactive({})
+const actioning = reactive({})   // value: 'order' | 'send' | 'deliver' | false
 const busy      = reactive({})
 const notes     = reactive({})
+const supplierData = reactive({}) // keyed by po.id: { name, email }
 
 // Modal state
 const showModal      = ref(false)
@@ -577,8 +669,13 @@ async function loadAll() {
 }
 
 // ─── PO status actions ────────────────────────────────────────────────────────
-function startAction(id) { actioning[id] = true; notes[id] = '' }
-function cancelAction(id) { actioning[id] = false; notes[id] = '' }
+function startAction(id, type) { actioning[id] = type; notes[id] = '' }
+function startSendAction(id) {
+  actioning[id] = 'send'
+  notes[id] = ''
+  supplierData[id] = { name: '', email: '' }
+}
+function cancelAction(id) { actioning[id] = false; notes[id] = ''; delete supplierData[id] }
 
 async function confirmOrdered(po) {
   busy[po.id] = true
@@ -592,6 +689,28 @@ async function confirmOrdered(po) {
       const idx = orders.value.findIndex(o => o.id === po.id)
       if (idx !== -1) orders.value[idx] = data.order
       cancelAction(po.id)
+    }
+  } finally { busy[po.id] = false }
+}
+
+async function confirmSendToSupplier(po) {
+  busy[po.id] = true
+  try {
+    const sd = supplierData[po.id] ?? {}
+    const res = await fetch(`${BASE}/api/nabavka/purchase-orders/${po.id}/send-to-supplier`, {
+      method: 'POST', headers: hdrs(),
+      body: JSON.stringify({
+        supplier_name:  sd.name  || null,
+        supplier_email: sd.email,
+        notes: notes[po.id] || null,
+      }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      const idx = orders.value.findIndex(o => o.id === po.id)
+      if (idx !== -1) orders.value[idx] = data.order
+      cancelAction(po.id)
+      activeStatusTab.value = 'narucena'
     }
   } finally { busy[po.id] = false }
 }

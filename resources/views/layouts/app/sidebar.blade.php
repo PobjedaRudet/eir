@@ -16,7 +16,7 @@
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('Navigacija')" class="grid">
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Početna') }}
+                        {{ __('PoÄŤetna') }}
                     </flux:sidebar.item>
 
                     @auth
@@ -31,23 +31,23 @@
                                 {{ __('Servisni nalozi') }}
                             </flux:sidebar.item>
                             <flux:sidebar.item icon="chart-bar" :href="route('vodja.izvjestaj')" :current="request()->routeIs('vodja.izvjestaj')" wire:navigate>
-                                {{ __('Izvještaj') }}
+                                {{ __('IzvjeĹˇtaj') }}
                             </flux:sidebar.item>
                         @elseif(auth()->user()->isMpm())
-                            <flux:sidebar.item icon="rectangle-stack" :href="route('mpm.portal')" :current="request()->routeIs('mpm.portal')" wire:navigate>
+                            <flux:sidebar.item icon="rectangle-stack" :href="route('pm.portal')" :current="request()->routeIs('pm.portal')" wire:navigate>
                                 {{ __('Portal') }}
                             </flux:sidebar.item>
-                            <flux:sidebar.item icon="folder-open" :href="route('mpm.projekti')" :current="request()->routeIs('mpm.projekti')" wire:navigate>
+                            <flux:sidebar.item icon="folder-open" :href="route('pm.projekti')" :current="request()->routeIs('pm.projekti')" wire:navigate>
                                 {{ __('Projekti') }}
                             </flux:sidebar.item>
-                            <flux:sidebar.item icon="archive-box" :href="route('mpm.oprema')" :current="request()->routeIs('mpm.oprema')" wire:navigate>
+                            <flux:sidebar.item icon="archive-box" :href="route('pm.oprema')" :current="request()->routeIs('pm.oprema')" wire:navigate>
                                 {{ __('Katalog') }}
                             </flux:sidebar.item>
-                            <flux:sidebar.item icon="check-badge" :href="route('mpm.odobrenja')" :current="request()->routeIs('mpm.odobrenja')" wire:navigate>
+                            <flux:sidebar.item icon="check-badge" :href="route('pm.odobrenja')" :current="request()->routeIs('pm.odobrenja')" wire:navigate>
                                 {{ __('Odobrenja') }}
                             </flux:sidebar.item>
-                            <flux:sidebar.item icon="chart-bar" :href="route('mpm.izvjestaj')" :current="request()->routeIs('mpm.izvjestaj')" wire:navigate>
-                                {{ __('Izvještaj') }}
+                            <flux:sidebar.item icon="chart-bar" :href="route('pm.izvjestaj')" :current="request()->routeIs('pm.izvjestaj')" wire:navigate>
+                                {{ __('IzvjeĹˇtaj') }}
                             </flux:sidebar.item>
                         @elseif(auth()->user()->isRadnik())
                             <flux:sidebar.item icon="clipboard-document-list" :href="route('radnik.unosi')" :current="request()->routeIs('radnik.unosi')" wire:navigate>
@@ -58,7 +58,7 @@
                             </flux:sidebar.item>
                         @elseif(auth()->user()->isNabavka())
                             <flux:sidebar.item icon="shopping-cart" :href="route('nabavka.dashboard')" :current="request()->routeIs('nabavka.dashboard')" wire:navigate>
-                                {{ __('Narudžbenice') }}
+                                {{ __('NarudĹľbenice') }}
                             </flux:sidebar.item>
                         @endif
                     @endauth

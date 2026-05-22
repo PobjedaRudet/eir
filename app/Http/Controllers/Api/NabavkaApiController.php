@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Mail\PurchaseOrderMail;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\User;
@@ -9,10 +10,13 @@ use App\Models\WorkOrder;
 use App\Models\WorkOrderItem;
 use App\Notifications\OrderDeliveredNotification;
 use App\Notifications\PurchaseOrderCreatedNotification;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 
 class NabavkaApiController extends Controller
 {
@@ -136,6 +140,47 @@ class NabavkaApiController extends Controller
         return response()->json(['order' => $this->format($purchaseOrder)]);
     }
 
+    public function sendToSupplier(Request $request, PurchaseOrder $purchaseOrder): JsonResponse
+    {
+        if ($purchaseOrder->status !== PurchaseOrder::STATUS_KREIRANA) {
+            return response()->json(['message' => 'Narudžbenica nije u statusu "Kreirana".'], 422);
+        }
+
+        $data = $request->validate([
+            'supplier_name'  => 'nullable|string|max:200',
+            'supplier_email' => 'required|email|max:200',
+            'notes'          => 'nullable|string|max:1000',
+        ]);
+
+        $purchaseOrder->update([
+            'supplier_name'  => $data['supplier_name'] ?? null,
+            'supplier_email' => $data['supplier_email'],
+            'notes'          => $data['notes'] ?? $purchaseOrder->notes,
+        ]);
+
+        $purchaseOrder->load('items.workOrderItem.workOrder.project.city');
+
+        Mail::to($data['supplier_email'])->send(new PurchaseOrderMail($purchaseOrder));
+
+        $purchaseOrder->update([
+            'status'     => PurchaseOrder::STATUS_NARUCENA,
+            'ordered_at' => now(),
+        ]);
+
+        $purchaseOrder->refresh()->load('items.workOrderItem.workOrder.project.city');
+
+        return response()->json(['order' => $this->format($purchaseOrder)]);
+    }
+
+    public function downloadPdf(PurchaseOrder $purchaseOrder): Response
+    {
+        $purchaseOrder->load('items.workOrderItem.workOrder.project.city');
+
+        $pdf = Pdf::loadView('pdf.purchase-order', ['po' => $purchaseOrder]);
+
+        return $pdf->download("narudzbenica-{$purchaseOrder->id}.pdf");
+    }
+
     public function markDelivered(Request $request, PurchaseOrder $purchaseOrder): JsonResponse
     {
         if ($purchaseOrder->status !== PurchaseOrder::STATUS_NARUCENA) {
@@ -178,12 +223,14 @@ class NabavkaApiController extends Controller
             ->unique('id');
 
         return [
-            'id'           => $po->id,
-            'status'       => $po->status,
-            'notes'        => $po->notes,
-            'ordered_at'   => $po->ordered_at?->format('d.m.Y. H:i'),
-            'delivered_at' => $po->delivered_at?->format('d.m.Y. H:i'),
-            'created_at'   => $po->created_at->format('d.m.Y. H:i'),
+            'id'             => $po->id,
+            'status'         => $po->status,
+            'notes'          => $po->notes,
+            'supplier_name'  => $po->supplier_name,
+            'supplier_email' => $po->supplier_email,
+            'ordered_at'     => $po->ordered_at?->format('d.m.Y. H:i'),
+            'delivered_at'   => $po->delivered_at?->format('d.m.Y. H:i'),
+            'created_at'     => $po->created_at->format('d.m.Y. H:i'),
             'work_orders'  => $workOrders->values()->map(fn ($wo) => [
                 'id'      => $wo->id,
                 'name'    => $wo->order_label,

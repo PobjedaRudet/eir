@@ -15,7 +15,8 @@ class PurchaseOrder extends Model
     const STATUS_ISPORUCENA = 'isporucena';
 
     protected $fillable = [
-        'work_order_id', 'status', 'notes', 'ordered_at', 'delivered_at', 'created_by',
+        'work_order_id', 'status', 'notes', 'supplier_name', 'supplier_email',
+        'ordered_at', 'delivered_at', 'created_by',
     ];
 
     protected $casts = [

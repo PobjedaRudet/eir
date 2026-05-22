@@ -12,7 +12,7 @@ Route::view('/', 'welcome')->name('home');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
 
-    // Notifications (shared — all roles)
+    // Notifications (shared â€” all roles)
     Route::prefix('api/notifications')->group(function () {
         Route::get('/', [NotificationsApiController::class, 'index']);
         Route::post('/read-all', [NotificationsApiController::class, 'markAllRead']);
@@ -20,7 +20,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-// Vođa projekta
+// VoÄ‘a projekta
 Route::middleware(['auth', 'verified', 'role:vodja'])->group(function () {
     Route::view('vodja/projekti', 'pages.vodja.projekti')->name('vodja.projekti');
     Route::view('vodja/izvjestaj', 'pages.vodja.izvjestaj')->name('vodja.izvjestaj');
@@ -68,18 +68,28 @@ Route::middleware(['auth', 'verified', 'role:radnik'])->group(function () {
     });
 });
 
-// Menadžer projekata (MPM)
+// MenadĹľer projekata (MPM)
 Route::middleware(['auth', 'verified', 'role:mpm'])->group(function () {
-    Route::view('mpm/portal', 'pages.mpm.portal')->name('mpm.portal');
-    Route::view('mpm/novi-projekat', 'pages.mpm.novi-projekat')->name('mpm.novi-projekat');
-    Route::view('mpm/projekti', 'pages.mpm.projekti')->name('mpm.projekti');
-    Route::view('mpm/projekti/{project}/radnici', 'pages.mpm.radnici')->name('mpm.radnici');
-    Route::view('mpm/projekti/{project}/plan', 'pages.mpm.plan')->name('mpm.plan');
-    Route::view('mpm/oprema', 'pages.mpm.oprema')->name('mpm.oprema');
-    Route::view('mpm/odobrenja', 'pages.mpm.odobrenja')->name('mpm.odobrenja');
-    Route::view('mpm/izvjestaj', 'pages.mpm.izvjestaj')->name('mpm.izvjestaj');
+    // Backward-compatibility aliases for old MPM URLs.
+    Route::redirect('mpm/portal', 'pm/portal', 301);
+    Route::redirect('mpm/novi-projekat', 'pm/novi-projekat', 301);
+    Route::redirect('mpm/projekti', 'pm/projekti', 301);
+    Route::redirect('mpm/oprema', 'pm/oprema', 301);
+    Route::redirect('mpm/odobrenja', 'pm/odobrenja', 301);
+    Route::redirect('mpm/izvjestaj', 'pm/izvjestaj', 301);
+    Route::get('mpm/projekti/{project}/radnici', fn ($project) => redirect("/pm/projekti/{$project}/radnici", 301));
+    Route::get('mpm/projekti/{project}/plan', fn ($project) => redirect("/pm/projekti/{$project}/plan", 301));
 
-    Route::prefix('api/mpm')->group(function () {
+    Route::view('pm/portal', 'pages.mpm.portal')->name('pm.portal');
+    Route::view('pm/novi-projekat', 'pages.mpm.novi-projekat')->name('pm.novi-projekat');
+    Route::view('pm/projekti', 'pages.mpm.projekti')->name('pm.projekti');
+    Route::view('pm/projekti/{project}/radnici', 'pages.mpm.radnici')->name('pm.radnici');
+    Route::view('pm/projekti/{project}/plan', 'pages.mpm.plan')->name('pm.plan');
+    Route::view('pm/oprema', 'pages.mpm.oprema')->name('pm.oprema');
+    Route::view('pm/odobrenja', 'pages.mpm.odobrenja')->name('pm.odobrenja');
+    Route::view('pm/izvjestaj', 'pages.mpm.izvjestaj')->name('pm.izvjestaj');
+
+    Route::prefix('api/pm')->group(function () {
         Route::get('projects', [MpmApiController::class, 'projects']);
         Route::get('project-form-config', [MpmApiController::class, 'projectFormConfig']);
         Route::get('cities/{cityId}/streets', [MpmApiController::class, 'streetsByCity']);
@@ -113,6 +123,10 @@ Route::middleware(['auth', 'verified', 'role:mpm'])->group(function () {
         Route::get('orders/pending', [MpmApiController::class, 'pendingOrders']);
         Route::post('orders/{order}/approve', [MpmApiController::class, 'approveOrder']);
         Route::post('orders/{order}/reject', [MpmApiController::class, 'rejectOrder']);
+        // Excel export
+        Route::get('projects/{project}/export', [MpmApiController::class, 'exportProject']);
+        // Project status toggle
+        Route::patch('projects/{project}/toggle-status', [MpmApiController::class, 'toggleProjectStatus']);
         // Report (shared with vodja)
         Route::get('report', [VodjaApiController::class, 'report']);
         Route::get('report-projects', [VodjaApiController::class, 'projects']);
@@ -128,6 +142,8 @@ Route::middleware(['auth', 'verified', 'role:nabavka'])->group(function () {
         Route::get('purchase-orders', [NabavkaApiController::class, 'index']);
         Route::post('purchase-orders', [NabavkaApiController::class, 'createPurchaseOrder']);
         Route::post('purchase-orders/{purchaseOrder}/order', [NabavkaApiController::class, 'markOrdered']);
+        Route::post('purchase-orders/{purchaseOrder}/send-to-supplier', [NabavkaApiController::class, 'sendToSupplier']);
+        Route::get('purchase-orders/{purchaseOrder}/pdf', [NabavkaApiController::class, 'downloadPdf']);
         Route::post('purchase-orders/{purchaseOrder}/deliver', [NabavkaApiController::class, 'markDelivered']);
     });
 });

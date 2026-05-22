@@ -1,3 +1,3 @@
 <x-layouts::app :title="__('Odobrenja')">
-    <div id="vue-mpm-odobrenja"></div>
+    <div id="vue-pm-odobrenja"></div>
 </x-layouts::app>

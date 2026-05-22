@@ -12,6 +12,8 @@ use App\Models\ResourcePlan;
 use App\Models\ResourcePlanHistory;
 use App\Models\Street;
 use App\Models\User;
+use App\Models\Operation;
+use App\Models\WorkEntry;
 use App\Models\WorkOrder;
 use App\Notifications\OrderApprovedNotification;
 use App\Notifications\OrderRejectedNotification;
@@ -19,13 +21,19 @@ use App\Notifications\WorkOrderReadyForProcurementNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MpmApiController extends Controller
 {
-    public function projects(): JsonResponse
+    public function projects(Request $request): JsonResponse
     {
+        $status = $request->query('status', Project::STATUS_AKTIVAN);
+
         $projects = Project::with(['city', 'streets', 'workEntries', 'workers'])
             ->where('user_id', Auth::id())
+            ->where('status', $status)
             ->latest()
             ->get()
             ->map(function (Project $p) {
@@ -39,6 +47,7 @@ class MpmApiController extends Controller
                     'name' => $p->name,
                     'date' => $p->date->format('d.m.Y.'),
                     'city' => $p->city->name,
+                    'status' => $p->status,
                     'streets' => $p->streets->map(fn ($s) => ['id' => $s->id, 'name' => $s->name]),
                     'entries_count' => $p->workEntries->count(),
                     'workers_count' => $p->workers->count(),
@@ -51,6 +60,21 @@ class MpmApiController extends Controller
             });
 
         return response()->json($projects);
+    }
+
+    public function toggleProjectStatus(Project $project): JsonResponse
+    {
+        if ($project->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $project->status = $project->status === Project::STATUS_AKTIVAN
+            ? Project::STATUS_ZAKLJUCEN
+            : Project::STATUS_AKTIVAN;
+
+        $project->save();
+
+        return response()->json(['status' => $project->status]);
     }
 
     public function projectFormConfig(): JsonResponse
@@ -585,5 +609,93 @@ class MpmApiController extends Controller
         $order->creator?->notify(new OrderRejectedNotification($order));
 
         return response()->json(['message' => 'Nalog je odbijen.']);
+    }
+
+    // ─── Excel Export ─────────────────────────────────────────────────────────
+
+    public function exportProject(Project $project): StreamedResponse
+    {
+        $entries = WorkEntry::with(['worker', 'project', 'street', 'enclosure', 'operations'])
+            ->where('project_id', $project->id)
+            ->orderBy('date')
+            ->orderBy('created_at')
+            ->get();
+
+        $templatePath = storage_path('app/templates/project-export-template.xlsx');
+        $spreadsheet  = IOFactory::load($templatePath);
+        $sheet        = $spreadsheet->getActiveSheet();
+
+        $workTypes = WorkEntry::WORK_TYPES;
+        $row = 3;
+
+        foreach ($entries as $entry) {
+            $base = [
+                1  => $entry->project->name,
+                2  => $entry->worker->name,
+                3  => $entry->cable_type,
+                4  => $entry->enclosure?->name ?? '',
+                5  => $entry->date->format('d.m.Y.'),
+                6  => $entry->street?->name ?? '',
+                7  => collect($entry->work_types ?? [])
+                         ->map(fn ($w) => $workTypes[$w] ?? $w)
+                         ->join(', '),
+            ];
+
+            $operations = $entry->operations;
+
+            if ($operations->isEmpty()) {
+                foreach ($base as $col => $val) {
+                    $sheet->setCellValueByColumnAndRow($col, $row, $val);
+                }
+                $row++;
+                continue;
+            }
+
+            foreach ($operations as $op) {
+                if ($op->kind === Operation::KINDS['iskop'] || $op->kind === 'iskop') {
+                    $subOps = $op->sub_operations ?? [];
+
+                    if (empty($subOps)) {
+                        foreach ($base as $col => $val) {
+                            $sheet->setCellValueByColumnAndRow($col, $row, $val);
+                        }
+                        $sheet->setCellValueByColumnAndRow(8,  $row, $op->excavation_type ?? '');
+                        $sheet->setCellValueByColumnAndRow(9,  $row, $op->dimensions ?? '');
+                        $sheet->setCellValueByColumnAndRow(10, $row, $op->meterage ?? '');
+                        $row++;
+                    } else {
+                        foreach ($subOps as $sub) {
+                            foreach ($base as $col => $val) {
+                                $sheet->setCellValueByColumnAndRow($col, $row, $val);
+                            }
+                            $sheet->setCellValueByColumnAndRow(8,  $row, $op->excavation_type ?? '');
+                            $sheet->setCellValueByColumnAndRow(9,  $row, $op->dimensions ?? '');
+                            $sheet->setCellValueByColumnAndRow(10, $row, $op->meterage ?? '');
+                            $sheet->setCellValueByColumnAndRow(11, $row, $sub['meterage'] ?? '');
+                            $sheet->setCellValueByColumnAndRow(12, $row, $sub['broj_kucice'] ?? '');
+                            $row++;
+                        }
+                    }
+                } elseif ($op->kind === 'upuhivanje') {
+                    foreach ($base as $col => $val) {
+                        $sheet->setCellValueByColumnAndRow($col, $row, $val);
+                    }
+                    $sheet->setCellValueByColumnAndRow(13, $row, $op->address ?? '');
+                    $sheet->setCellValueByColumnAndRow(14, $row, $op->splajsovano ? 'Da' : 'Ne');
+                    $sheet->setCellValueByColumnAndRow(15, $row, $op->aktivirano ? 'Da' : 'Ne');
+                    $row++;
+                }
+            }
+        }
+
+        $filename = 'projekat-' . Str::slug($project->name) . '-' . now()->format('Y-m-d') . '.xlsx';
+        $writer   = IOFactory::createWriter($spreadsheet, 'Xlsx');
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 }

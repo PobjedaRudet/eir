@@ -2,7 +2,7 @@
   <div class="max-w-3xl">
     <!-- Header -->
     <div class="flex items-center gap-3 mb-6">
-      <a :href="BASE + '/mpm/projekti'"
+      <a :href="BASE + '/pm/projekti'"
          class="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
         <svg class="size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
@@ -198,7 +198,7 @@
           <div class="flex gap-2">
             <button @click="saveTeams" :disabled="savingTeams"
                     class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors disabled:opacity-50">
-              {{ savingTeams ? 'Čuvanje...' : 'Sačuvaj timove' }}
+              {{ savingTeams ? 'ÄŚuvanje...' : 'SaÄŤuvaj timove' }}
             </button>
             <button @click="editingTeams = false"
                     class="px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-600 text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
@@ -273,13 +273,13 @@ async function loadPlan() {
   loading.value = true
   serverError.value = ''
   try {
-    const res  = await fetch(`${BASE}/api/mpm/projects/${getProjectId()}/plan`, { headers: { Accept: 'application/json' } })
+    const res  = await fetch(`${BASE}/api/pm/projects/${getProjectId()}/plan`, { headers: { Accept: 'application/json' } })
     const data = await res.json()
     project.value        = data.project
     plan.value           = data.plan
     projectWorkers.value = data.project_workers ?? []
   } catch {
-    serverError.value = 'Greška pri učitavanju plana.'
+    serverError.value = 'GreĹˇka pri uÄŤitavanju plana.'
   } finally {
     loading.value = false
   }
@@ -302,7 +302,7 @@ async function createPlan() {
 
   creating.value = true
   try {
-    const res = await fetch(`${BASE}/api/mpm/projects/${getProjectId()}/plan`, {
+    const res = await fetch(`${BASE}/api/pm/projects/${getProjectId()}/plan`, {
       method: 'POST',
       headers: hdrs(),
       body: JSON.stringify({
@@ -311,7 +311,7 @@ async function createPlan() {
       }),
     })
     const data = await res.json()
-    if (!res.ok) { createError.value = data.message ?? 'Greška.'; return }
+    if (!res.ok) { createError.value = data.message ?? 'GreĹˇka.'; return }
     plan.value = data.plan
     showCreateForm.value = false
   } finally {
@@ -333,7 +333,7 @@ async function saveTeams() {
   }
   savingTeams.value = true
   try {
-    const res = await fetch(`${BASE}/api/mpm/plans/${plan.value.id}/teams`, {
+    const res = await fetch(`${BASE}/api/pm/plans/${plan.value.id}/teams`, {
       method: 'PUT',
       headers: hdrs(),
       body: JSON.stringify({

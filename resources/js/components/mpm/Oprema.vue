@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="max-w-2xl">
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -131,7 +131,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { BASE } from '../../utils/base'
 
-// ── Tab config ────────────────────────────────────────────────────────────────
+// ¦¦ Tab config ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦
 const tabs = [
   { key: 'equipment', label: 'Oprema' },
   { key: 'material',  label: 'Materijali' },
@@ -139,12 +139,12 @@ const tabs = [
 ]
 
 const tabConfig = {
-  equipment: { apiBase: `${BASE}/api/mpm/equipment`,  hasUnit: false },
-  material:  { apiBase: `${BASE}/api/mpm/materials`,  hasUnit: true  },
-  service:   { apiBase: `${BASE}/api/mpm/services`,   hasUnit: true  },
+  equipment: { apiBase: `${BASE}/api/pm/equipment`,  hasUnit: false },
+  material:  { apiBase: `${BASE}/api/pm/materials`,  hasUnit: true  },
+  service:   { apiBase: `${BASE}/api/pm/services`,   hasUnit: true  },
 }
 
-// ── State ─────────────────────────────────────────────────────────────────────
+// ¦¦ State ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦
 const tab         = ref('equipment')
 const loading     = ref(true)
 const saving      = ref(false)
@@ -159,7 +159,7 @@ const deleteTarget = ref(null)
 
 const form = reactive({ name: '', category: '', unit: '', description: '' })
 
-// ── Computed ──────────────────────────────────────────────────────────────────
+// ¦¦ Computed ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦
 const currentItems = computed(() => catalogData[tab.value] ?? [])
 const currentMeta  = computed(() => metaData[tab.value] ?? { categories: [], units: [] })
 
@@ -172,7 +172,7 @@ const groupedItems = computed(() => {
   }, {})
 })
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ¦¦ Helpers ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦
 function hdrs() {
   return {
     'Content-Type': 'application/json',
@@ -189,7 +189,7 @@ function resetForm() {
   formError.value = ''
 }
 
-// ── Data loading ──────────────────────────────────────────────────────────────
+// ¦¦ Data loading ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦
 async function loadTab(key) {
   loading.value = true
   try {
@@ -213,7 +213,7 @@ async function switchTab(key) {
   }
 }
 
-// ── CRUD ──────────────────────────────────────────────────────────────────────
+// ¦¦ CRUD ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦
 async function saveItem() {
   formError.value = ''
   if (!form.name.trim()) { formError.value = 'Naziv je obavezan.'; return }

@@ -9,7 +9,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Project extends Model
 {
-    protected $fillable = ['name', 'date', 'city_id', 'user_id'];
+    protected $fillable = ['name', 'date', 'city_id', 'user_id', 'status'];
+
+    const STATUS_AKTIVAN   = 'aktivan';
+    const STATUS_ZAKLJUCEN = 'zakljucen';
 
     protected $casts = [
         'date' => 'date',

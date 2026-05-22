@@ -1,3 +1,3 @@
 <x-layouts::app :title="__('Plan projekta')">
-    <div id="vue-mpm-plan"></div>
+    <div id="vue-pm-plan"></div>
 </x-layouts::app>

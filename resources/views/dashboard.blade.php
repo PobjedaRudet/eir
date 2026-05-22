@@ -1,9 +1,9 @@
 <x-layouts::app :title="__('Dashboard')">
     <div class="flex h-full w-full flex-1 flex-col gap-6">
-        <flux:heading size="xl">Dobrodošli, {{ auth()->user()->name }}!</flux:heading>
+        <flux:heading size="xl">DobrodoĹˇli, {{ auth()->user()->name }}!</flux:heading>
 
         @if (auth()->user()->isVodja())
-            {{-- Vođa projekta --}}
+            {{-- VoÄ‘a projekta --}}
             <div class="grid gap-4 md:grid-cols-2">
                 <a href="{{ route('vodja.projekti') }}" wire:navigate
                    class="group flex flex-col gap-3 p-6 rounded-xl border border-neutral-200 dark:border-neutral-700
@@ -15,7 +15,7 @@
                         <flux:heading size="lg">Projekti</flux:heading>
                     </div>
                     <flux:text class="text-neutral-500 dark:text-neutral-400">
-                        Pregledajte i upravljajte svim projektima optičkih kablova.
+                        Pregledajte i upravljajte svim projektima optiÄŤkih kablova.
                     </flux:text>
                 </a>
 
@@ -29,28 +29,28 @@
                         <flux:heading size="lg">Resursi</flux:heading>
                     </div>
                     <flux:text class="text-neutral-500 dark:text-neutral-400">
-                        Dodijelite mašine, WC, kontejnere i ostalu opremu projektima.
+                        Dodijelite maĹˇine, WC, kontejnere i ostalu opremu projektima.
                     </flux:text>
                 </a>
             </div>
         @elseif (auth()->user()->isMpm())
-            {{-- Menadžer projekata (MPM) --}}
+            {{-- MenadĹľer projekata (MPM) --}}
             <div class="grid gap-4 md:grid-cols-2">
-                <a href="{{ route('mpm.portal') }}" wire:navigate
+                <a href="{{ route('pm.portal') }}" wire:navigate
                    class="group flex flex-col gap-3 p-6 rounded-xl border border-neutral-200 dark:border-neutral-700
                           bg-white dark:bg-neutral-900 hover:border-purple-500 hover:shadow-md transition-all">
                     <div class="flex items-center gap-3">
                         <div class="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
                             <flux:icon name="rectangle-stack" class="size-6" />
                         </div>
-                        <flux:heading size="lg">MPM Portal</flux:heading>
+                        <flux:heading size="lg">PM Portal</flux:heading>
                     </div>
                     <flux:text class="text-neutral-500 dark:text-neutral-400">
-                        Pristupite portalu menadžera projekata i upravljajte projektima.
+                        Pristupite portalu menadĹľera projekata i upravljajte projektima.
                     </flux:text>
                 </a>
 
-                <a href="{{ route('mpm.novi-projekat') }}" wire:navigate
+                <a href="{{ route('pm.novi-projekat') }}" wire:navigate
                    class="group flex flex-col gap-3 p-6 rounded-xl border border-neutral-200 dark:border-neutral-700
                           bg-white dark:bg-neutral-900 hover:border-green-500 hover:shadow-md transition-all">
                     <div class="flex items-center gap-3">
@@ -75,10 +75,10 @@
                         <div class="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
                             <flux:icon name="shopping-cart" class="size-6" />
                         </div>
-                        <flux:heading size="lg">Narudžbenice</flux:heading>
+                        <flux:heading size="lg">NarudĹľbenice</flux:heading>
                     </div>
                     <flux:text class="text-neutral-500 dark:text-neutral-400">
-                        Upravljajte narudžbenicama kreiranim iz odobrenih naloga.
+                        Upravljajte narudĹľbenicama kreiranim iz odobrenih naloga.
                     </flux:text>
                 </a>
             </div>
@@ -95,7 +95,7 @@
                         <flux:heading size="lg">Moji unosi</flux:heading>
                     </div>
                     <flux:text class="text-neutral-500 dark:text-neutral-400">
-                        Pregledajte sve vaše unesene radove na terenu.
+                        Pregledajte sve vaĹˇe unesene radove na terenu.
                     </flux:text>
                 </a>
 
@@ -109,7 +109,7 @@
                         <flux:heading size="lg">Novi unos</flux:heading>
                     </div>
                     <flux:text class="text-neutral-500 dark:text-neutral-400">
-                        Evidentirajte radove iskopa i polaganja optičkih kablova.
+                        Evidentirajte radove iskopa i polaganja optiÄŤkih kablova.
                     </flux:text>
                 </a>
             </div>

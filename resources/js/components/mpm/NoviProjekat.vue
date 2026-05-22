@@ -2,7 +2,7 @@
   <div class="max-w-2xl">
     <div class="flex items-center gap-3 mb-6">
       <a
-        :href="BASE + '/mpm/projekti'"
+        :href="BASE + '/pm/projekti'"
         class="inline-flex items-center justify-center rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
       >
         <svg class="size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -12,7 +12,7 @@
       <h1 class="text-2xl font-bold text-zinc-900 dark:text-white">Novi projekat</h1>
     </div>
 
-    <div v-if="configLoading" class="text-center py-12 text-zinc-500">Učitavanje...</div>
+    <div v-if="configLoading" class="text-center py-12 text-zinc-500">UÄŤitavanje...</div>
 
     <form v-else @submit.prevent="save" class="space-y-6">
 
@@ -42,13 +42,13 @@
 
       <!-- Ulice -->
       <template v-if="form.city_id">
-        <div v-if="streetsLoading" class="text-sm text-zinc-500">Učitavanje ulica...</div>
+        <div v-if="streetsLoading" class="text-sm text-zinc-500">UÄŤitavanje ulica...</div>
         <div v-else-if="streets.length === 0" class="p-4 rounded-lg border border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300 text-sm flex items-center gap-2">
-          ⚠ Nema ulica za izabrani grad.
+          âš  Nema ulica za izabrani grad.
         </div>
         <div v-else>
           <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-            Ulice projekta <span class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500">odaberite jednu ili više</span>
+            Ulice projekta <span class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500">odaberite jednu ili viĹˇe</span>
           </label>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <label
@@ -67,9 +67,9 @@
 
       <div class="flex items-center gap-3 pt-2">
         <button type="submit" :disabled="saving" class="btn-primary">
-          {{ saving ? 'Čuvanje...' : 'Sačuvaj projekat' }}
+          {{ saving ? 'ÄŚuvanje...' : 'SaÄŤuvaj projekat' }}
         </button>
-        <a :href="BASE + '/mpm/projekti'" class="btn-secondary">Odustani</a>
+        <a :href="BASE + '/pm/projekti'" class="btn-secondary">Odustani</a>
       </div>
 
       <div v-if="serverError" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">
@@ -108,10 +108,10 @@ async function onCityChange() {
   streetsLoading.value = true
 
   try {
-    const res = await fetch(`${BASE}/api/mpm/cities/${form.city_id}/streets`, { headers: { 'Accept': 'application/json' } })
-    streets.value = await getJsonOrThrow(res, 'Ne mogu učitati ulice za izabrani grad.')
+    const res = await fetch(`${BASE}/api/pm/cities/${form.city_id}/streets`, { headers: { 'Accept': 'application/json' } })
+    streets.value = await getJsonOrThrow(res, 'Ne mogu uÄŤitati ulice za izabrani grad.')
   } catch (error) {
-    serverError.value = error instanceof Error ? error.message : 'Ne mogu učitati ulice za izabrani grad.'
+    serverError.value = error instanceof Error ? error.message : 'Ne mogu uÄŤitati ulice za izabrani grad.'
   } finally {
     streetsLoading.value = false
   }
@@ -123,7 +123,7 @@ async function save() {
   saving.value = true
 
   try {
-    const res = await fetch(BASE + '/api/mpm/projects', {
+    const res = await fetch(BASE + '/api/pm/projects', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -144,12 +144,12 @@ async function save() {
       if (res.status === 422 && json.errors) {
         errors.value = json.errors
       } else {
-        serverError.value = json.message ?? 'Greška pri čuvanju.'
+        serverError.value = json.message ?? 'GreĹˇka pri ÄŤuvanju.'
       }
       return
     }
 
-    window.location.href = BASE + '/mpm/projekti'
+    window.location.href = BASE + '/pm/projekti'
   } finally {
     saving.value = false
   }
@@ -175,11 +175,11 @@ onMounted(async () => {
   serverError.value = ''
 
   try {
-    const res = await fetch(BASE + '/api/mpm/project-form-config', { headers: { 'Accept': 'application/json' } })
-    const data = await getJsonOrThrow(res, 'Ne mogu učitati gradove iz baze.')
+    const res = await fetch(BASE + '/api/pm/project-form-config', { headers: { 'Accept': 'application/json' } })
+    const data = await getJsonOrThrow(res, 'Ne mogu uÄŤitati gradove iz baze.')
     cities.value = data.cities
   } catch (error) {
-    serverError.value = error instanceof Error ? error.message : 'Ne mogu učitati gradove iz baze.'
+    serverError.value = error instanceof Error ? error.message : 'Ne mogu uÄŤitati gradove iz baze.'
   } finally {
     configLoading.value = false
   }

@@ -25,14 +25,14 @@ const components = {
     'vue-vodja-izvjestaj': VodjaIzvjestaj,
     'vue-vodja-servis': VodjaServis,
     'vue-vodja-svi-servisni-nalozi': VodjaSviServis,
-    'vue-mpm-portal': MpmPortal,
-    'vue-mpm-projekti': MpmProjekat,
-    'vue-mpm-novi-projekat': MpmNoviProjekat,
-    'vue-mpm-radnici': MpmRadnici,
-    'vue-mpm-oprema': MpmOprema,
-    'vue-mpm-odobrenja': MpmOdobrenja,
-    'vue-mpm-plan': MpmPlan,
-    'vue-mpm-izvjestaj': MpmIzvjestaj,
+    'vue-pm-portal': MpmPortal,
+    'vue-pm-projekti': MpmProjekat,
+    'vue-pm-novi-projekat': MpmNoviProjekat,
+    'vue-pm-radnici': MpmRadnici,
+    'vue-pm-oprema': MpmOprema,
+    'vue-pm-odobrenja': MpmOdobrenja,
+    'vue-pm-plan': MpmPlan,
+    'vue-pm-izvjestaj': MpmIzvjestaj,
     'vue-notification-bell': NotificationBell,
     'vue-nabavka-dashboard': NabavkaDashboard,
 }
@@ -46,7 +46,7 @@ function mountVueApps() {
     })
 }
 
-// Initial mount (type="module" scripts are deferred — DOM is ready)
+// Initial mount (type="module" scripts are deferred â€” DOM is ready)
 mountVueApps()
 
 // Re-mount after Livewire wire:navigate replaces the DOM (Flux uses this internally)

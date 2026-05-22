@@ -1,3 +1,3 @@
 <x-layouts::app :title="__('Oprema')">
-    <div id="vue-mpm-oprema"></div>
+    <div id="vue-pm-oprema"></div>
 </x-layouts::app>

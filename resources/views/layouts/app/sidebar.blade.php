@@ -24,11 +24,20 @@
                             <flux:sidebar.item icon="folder-open" :href="route('vodja.projekti')" :current="request()->routeIs('vodja.projekti')" wire:navigate>
                                 {{ __('Projekti') }}
                             </flux:sidebar.item>
+                            <flux:sidebar.item icon="map" :href="route('vodja.gradovi-ulice')" :current="request()->routeIs('vodja.gradovi-ulice')" wire:navigate>
+                                {{ __('Gradovi i ulice') }}
+                            </flux:sidebar.item>
                             <flux:sidebar.item icon="archive-box" :href="route('vodja.projekti')" :current="request()->routeIs('vodja.resursi')" wire:navigate>
                                 {{ __('Resursi') }}
                             </flux:sidebar.item>
                             <flux:sidebar.item icon="wrench-screwdriver" :href="route('vodja.servisni-nalozi')" :current="request()->routeIs('vodja.servisni-nalozi')" wire:navigate>
                                 {{ __('Servisni nalozi') }}
+                            </flux:sidebar.item>
+                            <flux:sidebar.item icon="users" :href="route('vodja.radnici')" :current="request()->routeIs('vodja.radnici')" wire:navigate>
+                                {{ __('Radnici') }}
+                            </flux:sidebar.item>
+                            <flux:sidebar.item icon="user-group" :href="route('vodja.timovi-katalog')" :current="request()->routeIs('vodja.timovi-katalog')" wire:navigate>
+                                {{ __('Timovi') }}
                             </flux:sidebar.item>
                             <flux:sidebar.item icon="chart-bar" :href="route('vodja.izvjestaj')" :current="request()->routeIs('vodja.izvjestaj')" wire:navigate>
                                 {{ __('Izvještaj') }}

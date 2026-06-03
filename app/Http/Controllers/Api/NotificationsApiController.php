@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Routing\Controller;
@@ -11,8 +12,11 @@ class NotificationsApiController extends Controller
 {
     public function index(): JsonResponse
     {
-        $notifications = Auth::user()
-            ->notifications()
+        /** @var User $user */
+        $user = Auth::user();
+
+        $notifications = $user
+            ->unreadNotifications()
             ->latest()
             ->limit(30)
             ->get()
@@ -25,7 +29,7 @@ class NotificationsApiController extends Controller
 
         return response()->json([
             'notifications' => $notifications,
-            'unread_count' => Auth::user()->unreadNotifications()->count(),
+            'unread_count' => $user->unreadNotifications()->count(),
         ]);
     }
 
@@ -42,7 +46,10 @@ class NotificationsApiController extends Controller
 
     public function markAllRead(): JsonResponse
     {
-        Auth::user()->unreadNotifications()->update(['read_at' => now()]);
+        /** @var User $user */
+        $user = Auth::user();
+
+        $user->unreadNotifications()->update(['read_at' => now()]);
 
         return response()->json(['ok' => true]);
     }

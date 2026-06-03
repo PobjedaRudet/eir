@@ -115,7 +115,7 @@
                   </template>
                   <template v-if="entry.enclosure">
                     <span class="text-neutral-300 dark:text-neutral-600">·</span>
-                    <span class="text-xs text-neutral-500 dark:text-neutral-400">Kućište: {{ entry.enclosure }}</span>
+                    <span class="text-xs text-neutral-500 dark:text-neutral-400">NTV: {{ entry.enclosure }}</span>
                   </template>
                   <div class="ml-auto flex flex-wrap items-center gap-1">
                     <span class="px-2 py-0.5 text-xs rounded-full border border-neutral-200 dark:border-neutral-700 text-zinc-600 dark:text-zinc-300 font-mono">{{ entry.cable_type }}</span>
@@ -125,6 +125,14 @@
                       class="px-2 py-0.5 text-xs rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
                     >{{ workTypes[wt] ?? wt }}</span>
                   </div>
+                </div>
+
+                <div v-if="entry.show_day_comment" class="px-4 py-3 border-b border-amber-100 dark:border-amber-900/40 bg-amber-50/70 dark:bg-amber-900/10">
+                  <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+                    <span class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">Komentar na kraju dana</span>
+                    <span v-if="entry.day_comment_updated_at" class="text-xs text-amber-600/80 dark:text-amber-300/80">{{ entry.day_comment_updated_at }}</span>
+                  </div>
+                  <p class="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-line">{{ entry.day_comment }}</p>
                 </div>
 
                 <!-- Operations -->
@@ -143,8 +151,15 @@
                       <template v-else-if="op.kind === 'upuhivanje'">
                         <span class="px-2 py-0.5 text-xs rounded-full bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300">Upuhivanje kabla</span>
                         <span v-if="op.address" class="text-sm text-neutral-600 dark:text-neutral-400">{{ op.address }}</span>
+                        <span v-if="op.upuhano" class="px-2 py-0.5 text-xs rounded-full bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300">Upuhano</span>
                         <span v-if="op.splajsovano" class="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">Splajsovano</span>
                         <span v-if="op.aktivirano" class="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">Aktivirano</span>
+                      </template>
+
+                      <template v-else-if="op.kind === 'ha_plus'">
+                        <span class="px-2 py-0.5 text-xs rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">+HA</span>
+                        <span v-if="op.meterage" class="px-2 py-0.5 text-xs rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-medium">↔ {{ parseFloat(op.meterage).toFixed(2) }} m</span>
+                        <span v-if="op.address" class="text-sm text-neutral-600 dark:text-neutral-400">Broj kuće: {{ op.address }}</span>
                       </template>
 
                       <span
@@ -237,7 +252,10 @@ const projectGroups = computed(() => {
     ...pg,
     workers: Array.from(pg.workers.entries()).map(([worker, entries]) => ({
       worker,
-      entries: entries.slice().sort((a, b) => b.date.localeCompare(a.date)),
+      entries: entries.slice().sort((a, b) => b.date.localeCompare(a.date)).map((entry, index, workerEntries) => ({
+        ...entry,
+        show_day_comment: Boolean(entry.day_comment) && workerEntries.findIndex(item => item.date === entry.date) === index,
+      })),
     })),
   }))
 })

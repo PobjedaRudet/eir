@@ -11,12 +11,15 @@
         </svg>
       </a>
       <div>
-        <h1 class="text-xl font-bold text-zinc-900 dark:text-white leading-tight">Novi unos radova</h1>
-        <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Popunite sve obavezne podatke i sačuvajte unos</p>
+        <h1 class="text-xl font-bold text-zinc-900 dark:text-white leading-tight">{{ isEditMode ? 'Uredi unos radova' : 'Novi unos radova' }}</h1>
+        <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{{ isEditMode ? 'Izmjene su moguće samo isti dan kada je unos kreiran.' : 'Popunite sve obavezne podatke i sačuvajte unos' }}</p>
       </div>
     </div>
 
     <div v-if="configLoading" class="text-center py-12 text-zinc-500 text-sm">Učitavanje...</div>
+    <div v-else-if="editLoadBlocked" class="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4 text-sm text-red-700 dark:text-red-300">
+      {{ serverError }}
+    </div>
 
     <form v-else @submit.prevent="save" class="space-y-4">
 
@@ -45,18 +48,20 @@
             <label class="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Vrsta kabla</label>
             <select v-model="form.cable_type" class="select-field">
               <option value="">Izaberite</option>
-              <option v-for="ct in config.cable_types" :key="ct" :value="ct">{{ ct }}</option>
+              <option v-for="ct in availableCableTypes" :key="ct" :value="ct">{{ ct }}</option>
             </select>
+            <p v-if="form.project_id && !availableCableTypes.length" class="mt-1 text-xs text-neutral-400">Vođa vam nije dodijelio nijedan kabal za ovaj projekat.</p>
             <p v-if="errors['cable_type']" class="mt-1 text-xs text-red-600">{{ errors['cable_type'][0] }}</p>
           </div>
 
-          <!-- Kućište -->
+          <!-- NTV -->
           <div>
-            <label class="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Kućište</label>
+            <label class="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">NTV</label>
             <select v-model="form.enclosure_id" class="select-field">
               <option value="">Izaberite</option>
-              <option v-for="e in config.enclosures" :key="e.id" :value="e.id">{{ e.name }}</option>
+              <option v-for="e in availableEnclosures" :key="e.id" :value="e.id">{{ e.name }}</option>
             </select>
+            <p v-if="form.project_id && !availableEnclosures.length" class="mt-1 text-xs text-neutral-400">Vođa vam nije dodijelio nijedan NTV za ovaj projekat.</p>
             <p v-if="errors['enclosure_id']" class="mt-1 text-xs text-red-600">{{ errors['enclosure_id'][0] }}</p>
           </div>
 
@@ -167,7 +172,7 @@
                 <label class="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5">Vrsta operacije</label>
                 <div class="grid grid-cols-2 gap-2">
                   <label
-                    v-for="(label, kind) in { iskop: 'Iskop', upuhivanje: 'Upuhivanje kabla' }"
+                    v-for="(label, kind) in { iskop: 'Iskop', upuhivanje: 'Upuhivanje kabla', ha_plus: '+HA' }"
                     :key="kind"
                     class="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg border text-sm font-medium transition-colors"
                     :class="op.kind === kind
@@ -228,11 +233,11 @@
                   <p v-if="errors[`operations.${i}.meterage`]" class="mt-1 text-xs text-red-600">{{ errors[`operations.${i}.meterage`][0] }}</p>
                 </div>
 
-                <!-- Podoperacije HP+ -->
+                <!-- Podoperacije -->
                 <div>
                   <div class="flex items-center justify-between mb-1.5">
                     <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Podoperacije</label>
-                    <button type="button" @click="addSubOperation(i)" class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1">
+                    <button type="button" @click="addSubOperation(i, 'HP+')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1">
                       <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
                       Dodaj HP+
                     </button>
@@ -246,7 +251,7 @@
                     >
                       <div class="flex items-center justify-between mb-2">
                         <span class="text-xs font-bold text-zinc-700 dark:text-zinc-200 flex items-center gap-1.5">
-                          <span class="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 font-mono">HP+</span>
+                          <span class="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 font-mono">{{ sub.type }}</span>
                           Podoperacija {{ j + 1 }}
                         </span>
                         <button type="button" @click="removeSubOperation(i, j)" class="text-red-400 hover:text-red-600 p-0.5 rounded transition-colors">
@@ -259,18 +264,24 @@
                           <input type="number" v-model="sub.meterage" step="0.01" min="0.01" placeholder="npr. 5.50" class="input-field text-sm">
                         </div>
                         <div>
-                          <label class="block text-xs text-zinc-500 mb-0.5">Broj kućice</label>
+                          <label class="block text-xs text-zinc-500 mb-0.5">Broj kuće</label>
                           <input type="text" v-model="sub.broj_kucice" placeholder="npr. 12A" class="input-field text-sm">
                         </div>
                       </div>
                       <!-- Sub-op photos -->
                       <div class="mt-2 pt-2 border-t border-neutral-200 dark:border-neutral-700">
-                        <p class="text-xs font-medium text-neutral-500 mb-1.5">Fotografije HP+</p>
+                        <p class="text-xs font-medium text-neutral-500 mb-1.5">Fotografije {{ sub.type }}</p>
+                        <div v-if="sub.existing_photos?.length" class="mb-2 flex flex-wrap gap-1.5">
+                          <a v-for="(photo, k) in sub.existing_photos" :key="`existing-sub-${k}`" :href="photo.url" target="_blank" class="block">
+                            <img :src="photo.url" class="h-12 w-12 object-cover rounded-lg border border-neutral-200 dark:border-neutral-600">
+                          </a>
+                        </div>
                         <label class="flex items-center justify-center gap-2 w-full h-10 border border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors text-xs text-neutral-400">
                           <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M1 5.25A2.25 2.25 0 0 1 3.25 3h13.5A2.25 2.25 0 0 1 19 5.25v9.5A2.25 2.25 0 0 1 16.75 17H3.25A2.25 2.25 0 0 1 1 14.75v-9.5Zm1.5 5.81v3.69c0 .414.336.75.75.75h13.5a.75.75 0 0 0 .75-.75v-2.69l-2.22-2.219a.75.75 0 0 0-1.06 0l-1.91 1.909.47.47a.75.75 0 1 1-1.06 1.06L6.53 8.091a.75.75 0 0 0-1.06 0l-2.97 2.97ZM12 7a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" clip-rule="evenodd" /></svg>
                           Dodaj fotografije
                           <input type="file" :name="`sub_photos_${i}_${j}`" @change="e => onSubPhotoChange(e, i, j)" accept="image/*" multiple class="hidden">
                         </label>
+                        <p v-if="errors[`operations.${i}.sub_operations.${j}.photos`]" class="mt-1 text-xs text-red-600">{{ errors[`operations.${i}.sub_operations.${j}.photos`][0] }}</p>
                         <div v-if="subPhotoPreviews[i]?.[j]?.length" class="mt-1.5 flex flex-wrap gap-1.5">
                           <div v-for="(src, k) in subPhotoPreviews[i][j]" :key="k" class="relative">
                             <img :src="src" class="h-12 w-12 object-cover rounded-lg border border-neutral-200 dark:border-neutral-600">
@@ -295,6 +306,13 @@
                 <div class="flex gap-2">
                   <label
                     class="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex-1"
+                    :class="op.upuhano ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-800 dark:text-cyan-200' : 'border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-zinc-700 dark:text-zinc-300'"
+                  >
+                    <input type="checkbox" v-model="op.upuhano" class="rounded text-cyan-600 size-3.5">
+                    Upuhano
+                  </label>
+                  <label
+                    class="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex-1"
                     :class="op.splajsovano ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200' : 'border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-zinc-700 dark:text-zinc-300'"
                   >
                     <input type="checkbox" v-model="op.splajsovano" class="rounded text-blue-600 size-3.5">
@@ -310,14 +328,35 @@
                 </div>
               </template>
 
+              <!-- ── +HA ── -->
+              <template v-else-if="op.kind === 'ha_plus'">
+                <div>
+                  <label class="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Metraža (m)</label>
+                  <input type="number" v-model="op.meterage" step="0.01" min="0.01" placeholder="npr. 5.50" class="input-field">
+                  <p v-if="errors[`operations.${i}.meterage`]" class="mt-1 text-xs text-red-600">{{ errors[`operations.${i}.meterage`][0] }}</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Broj kuće</label>
+                  <input type="text" v-model="op.address" placeholder="npr. 12A" class="input-field">
+                  <p v-if="errors[`operations.${i}.address`]" class="mt-1 text-xs text-red-600">{{ errors[`operations.${i}.address`][0] }}</p>
+                </div>
+              </template>
+
               <!-- Fotografije operacije -->
               <div v-if="op.kind">
                 <label class="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1.5">Fotografije operacije</label>
+                <div v-if="op.existing_images?.length" class="mb-2 flex flex-wrap gap-2">
+                  <a v-for="(img, k) in op.existing_images" :key="`existing-op-${k}`" :href="img.url" target="_blank" class="block">
+                    <img :src="img.url" class="h-16 w-16 object-cover rounded-lg border border-neutral-200 dark:border-neutral-600">
+                  </a>
+                </div>
                 <label class="flex items-center justify-center gap-2 w-full h-12 border border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-xs text-neutral-400">
                   <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M1 5.25A2.25 2.25 0 0 1 3.25 3h13.5A2.25 2.25 0 0 1 19 5.25v9.5A2.25 2.25 0 0 1 16.75 17H3.25A2.25 2.25 0 0 1 1 14.75v-9.5Zm1.5 5.81v3.69c0 .414.336.75.75.75h13.5a.75.75 0 0 0 .75-.75v-2.69l-2.22-2.219a.75.75 0 0 0-1.06 0l-1.91 1.909.47.47a.75.75 0 1 1-1.06 1.06L6.53 8.091a.75.75 0 0 0-1.06 0l-2.97 2.97ZM12 7a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" clip-rule="evenodd" /></svg>
                   Kliknite za dodavanje fotografija
                   <input type="file" :name="`photos_${i}`" @change="e => onPhotoChange(e, i)" accept="image/*" multiple class="hidden">
                 </label>
+                <p v-if="errors[`operations.${i}.photos`]" class="mt-1 text-xs text-red-600">{{ errors[`operations.${i}.photos`][0] }}</p>
                 <div v-if="photoPreviews[i]?.length" class="mt-2 flex flex-wrap gap-2">
                   <div v-for="(src, k) in photoPreviews[i]" :key="k" class="relative">
                     <img :src="src" class="h-16 w-16 object-cover rounded-lg border border-neutral-200 dark:border-neutral-600">
@@ -355,8 +394,13 @@
 import { ref, computed, onMounted, onBeforeUnmount, reactive } from 'vue'
 import { BASE } from '../../utils/base'
 
-const config = ref({ projects: [], enclosures: [], cable_types: [], work_types: {} })
+const mountEl = document.getElementById('vue-radnik-novi-unos')
+const entryId = mountEl?.dataset.entryId ?? ''
+const isEditMode = !!entryId
+
+const config = ref({ projects: [], work_types: {} })
 const configLoading = ref(true)
+const editLoadBlocked = ref(false)
 const saving = ref(false)
 const errors = ref({})
 const serverError = ref('')
@@ -384,6 +428,16 @@ const availableStreets = computed(() => {
   return project?.streets ?? []
 })
 
+const availableCableTypes = computed(() => {
+  const project = config.value.projects.find(p => p.id == form.project_id)
+  return project?.cable_types ?? []
+})
+
+const availableEnclosures = computed(() => {
+  const project = config.value.projects.find(p => p.id == form.project_id)
+  return project?.enclosures ?? []
+})
+
 const selectedStreetNames = computed(() => {
   const selectedIds = new Set(form.street_ids.map(id => String(id)))
   return availableStreets.value
@@ -404,7 +458,7 @@ const selectedStreetSummary = computed(() => {
 })
 
 function addOperation() {
-  form.operations.push({ kind: '', excavation_type: '', dimensions: '', meterage: '', sub_operations: [], address: '', splajsovano: false, aktivirano: false })
+  form.operations.push({ kind: '', excavation_type: '', dimensions: '', meterage: '', sub_operations: [], address: '', upuhano: false, splajsovano: false, aktivirano: false, existing_images: [] })
   photoFiles.value.push([])
   photoPreviews.value.push([])
   subPhotoFiles.value.push([])
@@ -420,8 +474,8 @@ function removeOperation(i) {
   subPhotoPreviews.value.splice(i, 1)
 }
 
-function addSubOperation(opIndex) {
-  form.operations[opIndex].sub_operations.push({ type: 'HP+', meterage: '', broj_kucice: '' })
+function addSubOperation(opIndex, type = 'HP+') {
+  form.operations[opIndex].sub_operations.push({ type, meterage: '', broj_kucice: '', existing_photos: [] })
   if (!subPhotoFiles.value[opIndex]) subPhotoFiles.value[opIndex] = []
   subPhotoFiles.value[opIndex].push([])
   if (!subPhotoPreviews.value[opIndex]) subPhotoPreviews.value[opIndex] = []
@@ -435,6 +489,8 @@ function removeSubOperation(opIndex, subIndex) {
 }
 
 function onProjectChange() {
+  form.cable_type = ''
+  form.enclosure_id = ''
   form.street_ids = []
   streetsOpen.value = false
 }
@@ -501,6 +557,10 @@ async function save() {
 
     form.operations.forEach((op, i) => {
       fd.append(`operations[${i}][kind]`, op.kind)
+      ;(op.existing_images ?? []).forEach((img, imgIndex) => {
+        fd.append(`operations[${i}][existing_images][${imgIndex}][path]`, img.path)
+        if (img.name) fd.append(`operations[${i}][existing_images][${imgIndex}][name]`, img.name)
+      })
       if (op.kind === 'iskop') {
         fd.append(`operations[${i}][excavation_type]`, op.excavation_type)
         fd.append(`operations[${i}][dimensions]`, op.dimensions)
@@ -509,17 +569,28 @@ async function save() {
           fd.append(`operations[${i}][sub_operations][${j}][type]`, sub.type)
           if (sub.meterage) fd.append(`operations[${i}][sub_operations][${j}][meterage]`, sub.meterage)
           if (sub.broj_kucice) fd.append(`operations[${i}][sub_operations][${j}][broj_kucice]`, sub.broj_kucice)
+          ;(sub.existing_photos ?? []).forEach((photo, photoIndex) => {
+            fd.append(`operations[${i}][sub_operations][${j}][existing_photos][${photoIndex}][path]`, photo.path)
+          })
           ;(subPhotoFiles.value[i]?.[j] ?? []).forEach(file => fd.append(`sub_photos_${i}_${j}[]`, file))
         })
       } else if (op.kind === 'upuhivanje') {
         fd.append(`operations[${i}][address]`, op.address)
+        fd.append(`operations[${i}][upuhano]`, op.upuhano ? '1' : '0')
         fd.append(`operations[${i}][splajsovano]`, op.splajsovano ? '1' : '0')
         fd.append(`operations[${i}][aktivirano]`, op.aktivirano ? '1' : '0')
+      } else if (op.kind === 'ha_plus') {
+        fd.append(`operations[${i}][meterage]`, op.meterage)
+        fd.append(`operations[${i}][address]`, op.address)
       }
       ;(photoFiles.value[i] ?? []).forEach(file => fd.append(`photos_${i}[]`, file))
     })
 
-    const res = await fetch(BASE + '/api/radnik/entries', {
+    if (isEditMode) {
+      fd.append('_method', 'PUT')
+    }
+
+    const res = await fetch(isEditMode ? `${BASE}/api/radnik/entries/${entryId}` : BASE + '/api/radnik/entries', {
       method: 'POST',
       headers: {
         'X-XSRF-TOKEN': getCsrf(),
@@ -561,25 +632,92 @@ async function getJsonOrThrow(response, fallbackMessage) {
   return payload
 }
 
+function resetFormState() {
+  form.project_id = ''
+  form.cable_type = ''
+  form.work_types = []
+  form.enclosure_id = ''
+  form.street_ids = []
+  form.date = new Date().toISOString().slice(0, 10)
+  form.operations.splice(0, form.operations.length)
+  photoFiles.value = []
+  subPhotoFiles.value = []
+  photoPreviews.value = []
+  subPhotoPreviews.value = []
+}
+
+function populateForm(entry) {
+  resetFormState()
+  form.project_id = String(entry.project_id ?? '')
+  form.cable_type = entry.cable_type ?? ''
+  form.work_types = [...(entry.work_types ?? [])]
+  form.enclosure_id = String(entry.enclosure_id ?? '')
+  form.street_ids = [...(entry.street_ids ?? [])]
+  form.date = entry.date ?? new Date().toISOString().slice(0, 10)
+
+  ;(entry.operations ?? []).forEach(op => {
+    form.operations.push({
+      kind: op.kind ?? '',
+      excavation_type: op.excavation_type ?? '',
+      dimensions: op.dimensions ?? '',
+      meterage: op.meterage ?? '',
+      sub_operations: (op.sub_operations ?? []).map(sub => ({
+        type: sub.type ?? 'HP+',
+        meterage: sub.meterage ?? '',
+        broj_kucice: sub.broj_kucice ?? '',
+        existing_photos: [...(sub.existing_photos ?? [])],
+      })),
+      address: op.address ?? '',
+      upuhano: !!op.upuhano,
+      splajsovano: !!op.splajsovano,
+      aktivirano: !!op.aktivirano,
+      existing_images: [...(op.existing_images ?? [])],
+    })
+    photoFiles.value.push([])
+    photoPreviews.value.push([])
+    subPhotoFiles.value.push((op.sub_operations ?? []).map(() => []))
+    subPhotoPreviews.value.push((op.sub_operations ?? []).map(() => []))
+  })
+
+  if (!form.operations.length) {
+    addOperation()
+  }
+}
+
 onMounted(async () => {
   document.addEventListener('click', onDocumentClick)
   serverError.value = ''
 
   try {
-    const res = await fetch(BASE + '/api/radnik/form-config', { headers: { 'Accept': 'application/json' } })
-    const data = await getJsonOrThrow(res, 'Ne mogu učitati projekte i pomoćne podatke iz baze.')
+    const [configRes, entryRes] = await Promise.all([
+      fetch(BASE + '/api/radnik/form-config', { headers: { 'Accept': 'application/json' } }),
+      isEditMode ? fetch(`${BASE}/api/radnik/entries/${entryId}`, { headers: { 'Accept': 'application/json' } }) : Promise.resolve(null),
+    ])
+
+    const data = await getJsonOrThrow(configRes, 'Ne mogu učitati projekte i pomoćne podatke iz baze.')
     config.value = {
       projects: data.projects ?? [],
-      enclosures: data.enclosures ?? [],
-      cable_types: data.cable_types ?? [],
       work_types: data.work_types ?? {},
     }
+
+    if (entryRes) {
+      const entryData = await getJsonOrThrow(entryRes, 'Ne mogu učitati unos za izmjenu.')
+      if (!entryData.can_edit) {
+        serverError.value = 'Unos se može mijenjati samo isti dan kada je kreiran.'
+      } else {
+        populateForm(entryData)
+      }
+    } else {
+      addOperation()
+    }
   } catch (error) {
+    if (isEditMode) {
+      editLoadBlocked.value = true
+    }
     serverError.value = error instanceof Error ? error.message : 'Ne mogu učitati projekte i pomoćne podatke iz baze.'
   } finally {
     configLoading.value = false
   }
-  addOperation()
 })
 
 onBeforeUnmount(() => {

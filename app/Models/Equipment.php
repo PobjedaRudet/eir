@@ -22,4 +22,16 @@ class Equipment extends Model
         return $this->belongsToMany(Project::class, 'project_equipment')
             ->withPivot('quantity');
     }
+
+    public function gradilista(): BelongsToMany
+    {
+        return $this->belongsToMany(Gradiliste::class, 'gradiliste_equipment')
+            ->withPivot('quantity');
+    }
+
+    public function teams(): BelongsToMany
+    {
+        return $this->belongsToMany(ProjectTeam::class, 'project_team_equipment')
+            ->withPivot('quantity');
+    }
 }

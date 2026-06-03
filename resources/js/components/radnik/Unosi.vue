@@ -91,12 +91,73 @@
     </div>
 
     <!-- Entry cards -->
-    <div v-else class="space-y-6">
-      <div
-        v-for="entry in filteredEntries"
-        :key="entry.id"
-        class="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm"
+    <div v-else class="space-y-8">
+      <section
+        v-for="group in groupedEntries"
+        :key="group.raw_date"
+        class="space-y-4"
       >
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <p class="text-lg font-bold text-zinc-900 dark:text-white">{{ group.display_date }}</p>
+            <p class="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
+              {{ group.entries.length }} {{ group.entries.length === 1 ? 'unos' : 'unosa' }} i {{ group.operation_count }} {{ group.operation_count === 1 ? 'operacija' : group.operation_count < 5 ? 'operacije' : 'operacija' }}
+            </p>
+          </div>
+          <span class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full border border-neutral-200 dark:border-neutral-700 text-zinc-500 dark:text-zinc-300 bg-white dark:bg-neutral-900">
+            Dnevni pregled
+          </span>
+        </div>
+
+        <div class="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4 shadow-sm">
+          <div class="flex items-center justify-between gap-3 flex-wrap mb-2">
+            <div>
+              <p class="text-sm font-semibold text-zinc-900 dark:text-white">Komentar na kraju dana</p>
+              <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                {{ group.can_comment
+                  ? 'Upišite sažetak za sve operacije koje ste danas radili.'
+                  : 'Sačuvani završni komentar za ovaj dan.' }}
+              </p>
+            </div>
+            <span v-if="group.comment?.updated_at" class="text-xs text-zinc-400 dark:text-zinc-500">
+              Ažurirano {{ group.comment.updated_at }}
+            </span>
+          </div>
+
+          <template v-if="group.can_comment">
+            <textarea
+              v-model="dayCommentDrafts[group.raw_date]"
+              rows="4"
+              placeholder="Npr. Danas su završeni iskopi u dvije ulice, upuhivanje na tri adrese i ostale otvorene stavke za sutra..."
+              class="w-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 px-3 py-2.5 text-sm text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            ></textarea>
+            <div class="mt-3 flex items-center gap-3 flex-wrap">
+              <button
+                type="button"
+                @click="saveDayComment(group.raw_date)"
+                :disabled="savingDayCommentDate === group.raw_date"
+                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {{ savingDayCommentDate === group.raw_date ? 'Čuva se...' : 'Sačuvaj komentar dana' }}
+              </button>
+              <p v-if="dayCommentStatus[group.raw_date]" class="text-sm text-emerald-600 dark:text-emerald-400">{{ dayCommentStatus[group.raw_date] }}</p>
+              <p v-if="dayCommentErrors[group.raw_date]" class="text-sm text-red-600 dark:text-red-400">{{ dayCommentErrors[group.raw_date] }}</p>
+            </div>
+          </template>
+          <p v-else-if="group.comment?.comment" class="text-sm leading-6 text-zinc-700 dark:text-zinc-300 whitespace-pre-line">
+            {{ group.comment.comment }}
+          </p>
+          <p v-else class="text-sm text-zinc-400 dark:text-zinc-500 italic">
+            Za ovaj dan nije sačuvan završni komentar.
+          </p>
+        </div>
+
+        <div class="space-y-6">
+          <div
+            v-for="entry in group.entries"
+            :key="entry.id"
+            class="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm"
+          >
         <!-- Entry header -->
         <div class="px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-800/40">
           <div class="flex items-start justify-between gap-4">
@@ -123,6 +184,25 @@
             <span class="shrink-0 px-2.5 py-1 text-xs font-semibold rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-mono tracking-wide">
               {{ entry.cable_type }}
             </span>
+          </div>
+
+          <div class="mt-3 flex items-center justify-between gap-3">
+            <span
+              class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full"
+              :class="entry.can_edit
+                ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'"
+            >
+              {{ entry.can_edit ? 'Moguća izmjena danas' : 'Izmjena zaključana' }}
+            </span>
+
+            <a
+              v-if="entry.can_edit"
+              :href="`${BASE}/radnik/unosi/${entry.id}/uredi`"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            >
+              Uredi unos
+            </a>
           </div>
 
           <!-- Work types & enclosure row -->
@@ -154,7 +234,9 @@
               <span class="shrink-0 mt-0.5 flex size-6 items-center justify-center rounded-full text-xs font-bold"
                 :class="op.kind === 'upuhivanje'
                   ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'
-                  : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'"
+                  : op.kind === 'ha_plus'
+                    ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
+                    : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'"
               >{{ idx + 1 }}</span>
 
               <div class="flex-1 min-w-0">
@@ -163,7 +245,9 @@
                   <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg"
                     :class="op.kind === 'upuhivanje'
                       ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 border border-purple-200 dark:border-purple-800'
-                      : 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800'"
+                      : op.kind === 'ha_plus'
+                        ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800'
+                        : 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800'"
                   >
                     <svg v-if="op.kind === 'upuhivanje'" class="size-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M3.505 2.365A41.369 41.369 0 0 1 9 2c1.863 0 3.697.124 5.495.365 1.247.167 2.18 1.108 2.435 2.268a4.45 4.45 0 0 0-.577-.069 43.141 43.141 0 0 0-4.706 0C9.229 4.696 7.5 6.727 7.5 8.998v2.24c0 1.413.67 2.735 1.8 3.575l-3.898 3.301a.75.75 0 0 1-1.202-.6V4.268a2.195 2.195 0 0 0-1.695-2.033Z" />
@@ -172,7 +256,7 @@
                     <svg v-else class="size-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M5.75 3a.75.75 0 0 0-.75.75v12.5c0 .414.336.75.75.75h8.5a.75.75 0 0 0 .75-.75V3.75a.75.75 0 0 0-.75-.75h-8.5Z" />
                     </svg>
-                    {{ op.kind === 'upuhivanje' ? 'Upuhivanje kabla' : 'Iskop' }}
+                    {{ op.kind === 'upuhivanje' ? 'Upuhivanje kabla' : op.kind === 'ha_plus' ? '+HA' : 'Iskop' }}
                   </span>
 
                   <!-- Iskop details -->
@@ -189,15 +273,27 @@
                   </template>
 
                   <!-- Upuhivanje details -->
-                  <template v-else>
+                  <template v-else-if="op.kind === 'upuhivanje'">
                     <span v-if="op.address" class="px-2.5 py-1 text-xs rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
                       {{ op.address }}
+                    </span>
+                    <span v-if="op.upuhano" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800">
+                      Upuhano
                     </span>
                     <span v-if="op.splajsovano" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
                       Splajsovano
                     </span>
                     <span v-if="op.aktivirano" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800">
                       Aktivirano
+                    </span>
+                  </template>
+
+                  <template v-else-if="op.kind === 'ha_plus'">
+                    <span v-if="op.meterage" class="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                      {{ op.meterage }} m
+                    </span>
+                    <span v-if="op.address" class="px-2.5 py-1 text-xs rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+                      Broj kuće: {{ op.address }}
                     </span>
                   </template>
                 </div>
@@ -219,7 +315,7 @@
             </div>
 
             <!-- Sub-operations -->
-            <div v-if="op.sub_operations?.length" class="mt-3 ml-9">
+            <div v-if="op.kind === 'iskop' && op.sub_operations?.length" class="mt-3 ml-9">
               <p class="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">Pod-operacije</p>
               <div class="space-y-2">
                 <div
@@ -233,7 +329,7 @@
                       {{ sub.meterage }} m
                     </span>
                     <span v-if="sub.broj_kucice" class="text-xs text-neutral-600 dark:text-neutral-400">
-                      Kućica: <strong class="text-zinc-800 dark:text-zinc-200">{{ sub.broj_kucice }}</strong>
+                      Broj kuće: <strong class="text-zinc-800 dark:text-zinc-200">{{ sub.broj_kucice }}</strong>
                     </span>
                   </div>
                   <!-- Sub-operation photos -->
@@ -293,6 +389,8 @@
           <span class="text-sm font-bold text-zinc-800 dark:text-zinc-100">{{ totalMeterage(entry) }} m</span>
         </div>
       </div>
+        </div>
+      </section>
     </div>
 
     <!-- Lightbox -->
@@ -330,9 +428,14 @@ import { BASE } from '../../utils/base'
 const entries = ref([])
 const loading = ref(true)
 const lightbox = ref(null)
+const dayComments = ref({})
+const dayCommentDrafts = reactive({})
+const dayCommentStatus = reactive({})
+const dayCommentErrors = reactive({})
+const savingDayCommentDate = ref(null)
 
 const today = new Date().toISOString().slice(0, 10)
-const filter = reactive({ project_id: '', date_from: today, date_to: '' })
+const filter = reactive({ project_id: '', date_from: '', date_to: '' })
 
 const filterProjects = computed(() => {
   const seen = new Set()
@@ -344,10 +447,38 @@ const filterProjects = computed(() => {
 const filteredEntries = computed(() => {
   return entries.value.filter(entry => {
     if (filter.project_id && entry.project.id != filter.project_id) return false
-    if (filter.date_from && entry.date < filter.date_from) return false
-    if (filter.date_to && entry.date > filter.date_to) return false
+    if (filter.date_from && entry.raw_date < filter.date_from) return false
+    if (filter.date_to && entry.raw_date > filter.date_to) return false
     return true
   })
+})
+
+const groupedEntries = computed(() => {
+  const groups = []
+  const seen = new Map()
+
+  for (const entry of filteredEntries.value) {
+    if (!seen.has(entry.raw_date)) {
+      const group = {
+        raw_date: entry.raw_date,
+        display_date: entry.date,
+        entries: [],
+        operation_count: 0,
+        can_comment: entry.raw_date === today,
+        comment: dayComments.value[entry.raw_date] ?? null,
+      }
+
+      seen.set(entry.raw_date, group)
+      groups.push(group)
+    }
+
+    const group = seen.get(entry.raw_date)
+    group.entries.push(entry)
+    group.operation_count += entry.operations?.length ?? 0
+    group.comment = dayComments.value[entry.raw_date] ?? null
+  }
+
+  return groups
 })
 
 const hasFilter = computed(() => !!(filter.project_id || filter.date_from || filter.date_to))
@@ -358,12 +489,56 @@ function clearFilter() {
   filter.date_to = ''
 }
 
+function hydrateDayComments(items) {
+  dayComments.value = items ?? {}
+
+  Object.entries(dayComments.value).forEach(([date, item]) => {
+    if (typeof dayCommentDrafts[date] !== 'string' || dayCommentDrafts[date] === '') {
+      dayCommentDrafts[date] = item.comment ?? ''
+    }
+  })
+}
+
+async function saveDayComment(date) {
+  savingDayCommentDate.value = date
+  dayCommentErrors[date] = ''
+  dayCommentStatus[date] = ''
+
+  try {
+    const res = await fetch(`${BASE}/api/radnik/day-comments/${date}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-XSRF-TOKEN': decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? ''),
+      },
+      body: JSON.stringify({ comment: dayCommentDrafts[date] ?? '' }),
+    })
+
+    const json = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      dayCommentErrors[date] = json.message ?? 'Komentar nije moguće sačuvati.'
+      return
+    }
+
+    dayComments.value = {
+      ...dayComments.value,
+      [date]: json.comment,
+    }
+    dayCommentDrafts[date] = json.comment?.comment ?? dayCommentDrafts[date] ?? ''
+    dayCommentStatus[date] = json.message ?? 'Komentar je sačuvan.'
+  } finally {
+    savingDayCommentDate.value = null
+  }
+}
+
 const workTypeLabels = { uvlačenje: 'Uvlačenje', iskop: 'Iskop', otvaranje_rupa: 'Otvaranje rupa' }
 const excavationLabels = { iskop: 'Iskop', iskop_flaster: 'Iskop flaster', iskop_asfalt: 'Iskop asfalt', raketa: 'Raketa' }
 
 function totalMeterage(entry) {
   return entry.operations
-    .filter(op => op.kind === 'iskop' && op.meterage)
+    .filter(op => ['iskop', 'ha_plus'].includes(op.kind) && op.meterage)
     .reduce((sum, op) => sum + parseFloat(op.meterage), 0)
     .toFixed(2)
     .replace(/\.00$/, '')
@@ -386,8 +561,17 @@ function onKeydown(e) {
 onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
   try {
-    const res = await fetch(BASE + '/api/radnik/entries', { headers: { 'Accept': 'application/json' } })
-    entries.value = await res.json()
+    const entriesRes = await fetch(BASE + '/api/radnik/entries', { headers: { 'Accept': 'application/json' } })
+    entries.value = await entriesRes.json()
+
+    try {
+      const commentsRes = await fetch(BASE + '/api/radnik/day-comments', { headers: { 'Accept': 'application/json' } })
+      if (commentsRes.ok) {
+        hydrateDayComments(await commentsRes.json())
+      }
+    } catch {
+      hydrateDayComments({})
+    }
   } finally {
     loading.value = false
   }

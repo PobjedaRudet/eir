@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\Equipment;
 use App\Models\Material;
+use App\Models\Ntv;
 use App\Models\Project;
 use App\Models\ProjectService;
 use App\Models\ResourcePlan;
@@ -17,6 +18,7 @@ use App\Models\WorkEntry;
 use App\Models\WorkOrder;
 use App\Notifications\OrderApprovedNotification;
 use App\Notifications\OrderRejectedNotification;
+use App\Notifications\ProjectApprovedNotification;
 use App\Notifications\WorkOrderReadyForProcurementNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,8 +33,8 @@ class MpmApiController extends Controller
     {
         $status = $request->query('status', Project::STATUS_AKTIVAN);
 
-        $projects = Project::with(['city', 'streets', 'workEntries', 'workers'])
-            ->where('user_id', Auth::id())
+        $projects = Project::with(['city', 'streets', 'workEntries', 'workers', 'leader'])
+            ->whereIn('status', [Project::STATUS_AKTIVAN, Project::STATUS_ZAKLJUCEN])
             ->where('status', $status)
             ->latest()
             ->get()
@@ -48,6 +50,7 @@ class MpmApiController extends Controller
                     'date' => $p->date->format('d.m.Y.'),
                     'city' => $p->city->name,
                     'status' => $p->status,
+                    'leader' => $p->leader?->name,
                     'streets' => $p->streets->map(fn ($s) => ['id' => $s->id, 'name' => $s->name]),
                     'entries_count' => $p->workEntries->count(),
                     'workers_count' => $p->workers->count(),
@@ -60,6 +63,87 @@ class MpmApiController extends Controller
             });
 
         return response()->json($projects);
+    }
+
+    public function pendingProjects(): JsonResponse
+    {
+        $projects = Project::with(['city', 'streets', 'leader', 'teams', 'projectNtvs.ntv', 'projectNtvs.streets', 'projectNtvs.team'])
+            ->where('status', Project::STATUS_NA_CEKANJU)
+            ->latest()
+            ->get()
+            ->map(fn (Project $p) => [
+                'id'         => $p->id,
+                'name'       => $p->name,
+                'date'       => $p->date->format('d.m.Y.'),
+                'city'       => $p->city->name,
+                'leader'     => $p->leader?->name,
+                'cable_type' => $p->cable_type,
+                'streets'    => $p->streets->map(fn ($s) => $s->name)->values(),
+                'teams'      => $p->teams->map(fn ($t) => ['id' => $t->id, 'name' => $t->name])->values(),
+                'ntvs'       => $p->projectNtvs->map(fn ($pn) => [
+                    'ntv_name'    => $pn->ntv->name,
+                    'team_name'   => $pn->team?->name,
+                    'streets'     => $pn->streets->pluck('name')->values(),
+                ])->values(),
+            ]);
+
+        return response()->json(['projects' => $projects, 'count' => $projects->count()]);
+    }
+
+    public function approveProject(Project $project): JsonResponse
+    {
+        if ($project->status !== Project::STATUS_NA_CEKANJU) {
+            return response()->json(['message' => 'Projekat nije na čekanju odobrenja.'], 422);
+        }
+
+        $project->update([
+            'status'         => Project::STATUS_AKTIVAN,
+            'rejection_note' => null,
+        ]);
+
+        $project->loadMissing('city', 'leader');
+        $project->leader?->notify(new ProjectApprovedNotification($project, Auth::user()?->name ?? 'PM'));
+
+        return response()->json(['message' => 'Projekat je odobren i aktivan.']);
+    }
+
+    public function rejectProject(Request $request, Project $project): JsonResponse
+    {
+        if ($project->status !== Project::STATUS_NA_CEKANJU) {
+            return response()->json(['message' => 'Projekat nije na čekanju odobrenja.'], 422);
+        }
+
+        $data = $request->validate(['note' => 'required|string|max:500']);
+
+        $project->update([
+            'status'         => Project::STATUS_ODBIJEN,
+            'rejection_note' => $data['note'],
+        ]);
+
+        return response()->json(['message' => 'Projekat je odbijen.']);
+    }
+
+    // ─── NTV Catalog ─────────────────────────────────────────────────────────
+
+    public function ntvCatalog(): JsonResponse
+    {
+        return response()->json(['ntvs' => Ntv::orderBy('name')->get(['id', 'name'])]);
+    }
+
+    public function storeNtv(Request $request): JsonResponse
+    {
+        $data = $request->validate(['name' => 'required|string|max:200|unique:ntvs,name']);
+        $ntv  = Ntv::create($data);
+        return response()->json(['ntv' => $ntv], 201);
+    }
+
+    public function destroyNtv(Ntv $ntv): JsonResponse
+    {
+        if ($ntv->projectNtvs()->exists()) {
+            return response()->json(['message' => 'NTV je dodijeljen projektu i ne može se obrisati.'], 422);
+        }
+        $ntv->delete();
+        return response()->json(['message' => 'NTV je obrisan.']);
     }
 
     public function toggleProjectStatus(Project $project): JsonResponse
@@ -683,6 +767,13 @@ class MpmApiController extends Controller
                     $sheet->setCellValueByColumnAndRow(13, $row, $op->address ?? '');
                     $sheet->setCellValueByColumnAndRow(14, $row, $op->splajsovano ? 'Da' : 'Ne');
                     $sheet->setCellValueByColumnAndRow(15, $row, $op->aktivirano ? 'Da' : 'Ne');
+                    $row++;
+                } elseif ($op->kind === 'ha_plus') {
+                    foreach ($base as $col => $val) {
+                        $sheet->setCellValueByColumnAndRow($col, $row, $val);
+                    }
+                    $sheet->setCellValueByColumnAndRow(10, $row, $op->meterage ?? '');
+                    $sheet->setCellValueByColumnAndRow(13, $row, $op->address ?? '');
                     $row++;
                 }
             }

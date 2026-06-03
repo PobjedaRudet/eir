@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use Database\Seeders\NtvSeeder;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -46,6 +47,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CitiesAndStreetsSeeder::class,
             EnclosuresSeeder::class,
+            NtvSeeder::class,
             EquipmentSeeder::class,
         ]);
     }

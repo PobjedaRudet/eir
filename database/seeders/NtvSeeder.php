@@ -2,14 +2,14 @@
 
 namespace Database\Seeders;
 
-use App\Models\Enclosure;
+use App\Models\Ntv;
 use Illuminate\Database\Seeder;
 
-class EnclosuresSeeder extends Seeder
+class NtvSeeder extends Seeder
 {
     public function run(): void
     {
-        $enclosures = [
+        $ntvs = [
             '8V8001',
             '8V8002',
             '8V8003',
@@ -21,8 +21,8 @@ class EnclosuresSeeder extends Seeder
             '8V8109',
         ];
 
-        foreach ($enclosures as $name) {
-            Enclosure::firstOrCreate(['name' => $name]);
+        foreach ($ntvs as $name) {
+            Ntv::firstOrCreate(['name' => $name]);
         }
     }
 }

@@ -41,14 +41,14 @@
              :class="n.read_at ? 'hover:bg-zinc-50 dark:hover:bg-zinc-800/50' : 'bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20'">
           <!-- Icon -->
           <div class="shrink-0 mt-0.5">
-            <span v-if="n.data.type === 'order_submitted'"
+            <span v-if="n.data.type === 'order_submitted' || n.data.type === 'project_submitted'"
                   class="flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4">
                 <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v.793c.026.009.051.02.076.032L7.674 8.51c.206.1.446.1.652 0l6.598-3.185A.755.755 0 0 1 15 5.293V4.5A1.5 1.5 0 0 0 13.5 3h-11Z" />
                 <path d="M15 6.954 8.978 9.86a2.25 2.25 0 0 1-1.956 0L1 6.954V11.5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V6.954Z" />
               </svg>
             </span>
-            <span v-else-if="n.data.type === 'order_approved'"
+            <span v-else-if="n.data.type === 'order_approved' || n.data.type === 'project_approved'"
                   class="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4">
                 <path fill-rule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clip-rule="evenodd" />
@@ -112,12 +112,13 @@ async function load() {
 async function markRead(n) {
   if (n.read_at) return
   n.read_at = new Date().toISOString()
+  notifications.value = notifications.value.filter(item => item.id !== n.id)
   unreadCount.value = Math.max(0, unreadCount.value - 1)
   await fetch(`${BASE}/api/notifications/${n.id}/read`, { method: 'POST', headers: hdrs() })
 }
 
 async function markAllRead() {
-  notifications.value.forEach(n => { if (!n.read_at) n.read_at = new Date().toISOString() })
+  notifications.value = []
   unreadCount.value = 0
   await fetch(`${BASE}/api/notifications/read-all`, { method: 'POST', headers: hdrs() })
 }

@@ -17,6 +17,7 @@ class Operation extends Model
         'meterage',
         'sub_operations',
         'address',
+        'upuhano',
         'splajsovano',
         'aktivirano',
     ];
@@ -24,6 +25,7 @@ class Operation extends Model
     protected $casts = [
         'street_ids' => 'array',
         'sub_operations' => 'array',
+        'upuhano' => 'boolean',
         'splajsovano' => 'boolean',
         'aktivirano' => 'boolean',
     ];
@@ -31,6 +33,7 @@ class Operation extends Model
     const KINDS = [
         'iskop' => 'Iskop',
         'upuhivanje' => 'Upuhivanje kabla',
+        'ha_plus' => '+HA',
     ];
 
     const EXCAVATION_TYPES = [

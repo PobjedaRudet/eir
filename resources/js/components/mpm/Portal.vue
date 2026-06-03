@@ -20,25 +20,9 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />
               </svg>
             </div>
-            <span class="text-base font-semibold text-zinc-900 dark:text-white">Moji projekti</span>
+            <span class="text-base font-semibold text-zinc-900 dark:text-white">Projekti</span>
           </div>
-          <p class="text-sm text-zinc-500 dark:text-zinc-400">Pregledajte i upravljajte projektima koje ste kreirali.</p>
-        </a>
-
-        <a
-          :href="BASE + '/pm/novi-projekat'"
-          class="group flex flex-col gap-3 p-6 rounded-xl border border-neutral-200 dark:border-neutral-700
-                 bg-white dark:bg-neutral-900 hover:border-green-500 hover:shadow-md transition-all"
-        >
-          <div class="flex items-center gap-3">
-            <div class="p-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
-              <svg class="size-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-              </svg>
-            </div>
-            <span class="text-base font-semibold text-zinc-900 dark:text-white">Novi projekat</span>
-          </div>
-          <p class="text-sm text-zinc-500 dark:text-zinc-400">Kreirajte novi projekat sa listom ulica za radove.</p>
+          <p class="text-sm text-zinc-500 dark:text-zinc-400">Pregledajte i upravljajte aktivnim projektima.</p>
         </a>
 
         <a
@@ -55,6 +39,22 @@
             <span class="text-base font-semibold text-zinc-900 dark:text-white">Radnici na projektima</span>
           </div>
           <p class="text-sm text-zinc-500 dark:text-zinc-400">Upravljajte radnicima dodijeljenim na projekte.</p>
+        </a>
+
+        <a
+          :href="BASE + '/pm/ntv-katalog'"
+          class="group flex flex-col gap-3 p-6 rounded-xl border border-neutral-200 dark:border-neutral-700
+                 bg-white dark:bg-neutral-900 hover:border-indigo-500 hover:shadow-md transition-all"
+        >
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+              <svg class="size-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 0 1-3-3m3 3a3 3 0 1 0 6 0m-6 0H3m16.5 0H21m-1.5 0a3 3 0 0 0 3-3m-3 3a3 3 0 1 1-6 0m6 0h1.5m-7.5 0h.008v.008H12v-.008ZM12 5.25h.008v.008H12V5.25Zm0 6.75h.008v.008H12v-.008Zm0 6.75h.008v.008H12v-.008Z" />
+              </svg>
+            </div>
+            <span class="text-base font-semibold text-zinc-900 dark:text-white">NTV Katalog</span>
+          </div>
+          <p class="text-sm text-zinc-500 dark:text-zinc-400">Upravljajte katalogom razvodnih kutija (NTV).</p>
         </a>
       </div>
     </div>

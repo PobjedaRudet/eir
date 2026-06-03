@@ -12,15 +12,7 @@
         </a>
         <h1 class="text-2xl font-bold text-zinc-900 dark:text-white">Projekti</h1>
       </div>
-      <a
-        :href="BASE + '/pm/novi-projekat'"
-        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
-      >
-        <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-          <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-        </svg>
-        Novi projekat
-      </a>
+
     </div>
 
     <!-- Status tabs -->

@@ -18,7 +18,6 @@ import MpmNoviProjekat from './components/mpm/NoviProjekat.vue'
 import MpmRadnici from './components/mpm/Radnici.vue'
 import MpmOprema from './components/mpm/Oprema.vue'
 import MpmOdobrenja from './components/mpm/Odobrenja.vue'
-import MpmPlan from './components/mpm/Plan.vue'
 import MpmIzvjestaj from './components/mpm/Izvjestaj.vue'
 import MpmNtvKatalog from './components/mpm/NtvKatalog.vue'
 import NotificationBell from './components/shared/NotificationBell.vue'
@@ -44,7 +43,6 @@ const components = {
     'vue-pm-radnici': MpmRadnici,
     'vue-pm-oprema': MpmOprema,
     'vue-pm-odobrenja': MpmOdobrenja,
-    'vue-pm-plan': MpmPlan,
     'vue-pm-izvjestaj': MpmIzvjestaj,
     'vue-pm-ntv-katalog': MpmNtvKatalog,
     'vue-notification-bell': NotificationBell,

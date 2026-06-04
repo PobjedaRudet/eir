@@ -47,6 +47,16 @@
           {{ orders.length }}
         </span>
       </button>
+      <button @click="activeMainTab = 'servis'"
+              class="flex-1 sm:flex-none px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+              :class="activeMainTab === 'servis'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
+                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'">
+        Servis
+        <span v-if="serviceOrders.length" class="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+          {{ serviceOrders.length }}
+        </span>
+      </button>
     </div>
 
     <!-- Loading -->
@@ -59,15 +69,30 @@
 
     <!-- TAB: Radni nalozi -->
     <template v-else-if="activeMainTab === 'nalozi'">
-      <div v-if="!workOrders.length" class="py-20 flex flex-col items-center gap-3 text-zinc-400">
+      <div class="flex gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800 mb-6 w-full sm:w-auto sm:inline-flex">
+        <button v-for="tab in workOrderTabs" :key="tab.key"
+                @click="activeWorkOrderTab = tab.key"
+                class="flex-1 sm:flex-none px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+                :class="activeWorkOrderTab === tab.key
+                  ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
+                  : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'">
+          {{ tab.label }}
+          <span v-if="workOrderCountByTab[tab.key]"
+                class="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+            {{ workOrderCountByTab[tab.key] }}
+          </span>
+        </button>
+      </div>
+
+      <div v-if="!filteredWorkOrders.length" class="py-20 flex flex-col items-center gap-3 text-zinc-400">
         <svg class="size-12" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2" />
         </svg>
-        <p class="text-sm">Nema odobrenih radnih naloga.</p>
+        <p class="text-sm">Nema radnih naloga u izabranom statusu.</p>
       </div>
 
       <div v-else class="grid gap-5 grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3">
-        <div v-for="wo in workOrders" :key="wo.id"
+        <div v-for="wo in filteredWorkOrders" :key="wo.id"
              class="flex flex-col rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
 
           <!-- WO header -->
@@ -153,7 +178,7 @@
           </div>
 
           <!-- Action button -->
-          <div class="px-5 py-4 border-t border-zinc-100 dark:border-zinc-800">
+          <div v-if="!woAllOrdered(wo)" class="px-5 py-4 border-t border-zinc-100 dark:border-zinc-800">
             <button @click="openCreateModalFor(wo)"
                     class="w-full py-2.5 rounded-lg border-2 border-dashed border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-center gap-2">
               <svg class="size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -167,7 +192,7 @@
     </template>
 
     <!-- TAB: Narudžbenice -->
-    <template v-else>
+    <template v-else-if="activeMainTab === 'narudzbenice'">
       <!-- Status sub-tabs -->
       <div class="flex gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800 mb-6 w-full sm:w-auto sm:inline-flex">
         <button v-for="tab in statusTabs" :key="tab.key"
@@ -434,6 +459,137 @@
       </div>
     </template>
 
+    <!-- TAB: Servis -->
+    <template v-else>
+      <div class="flex gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800 mb-6 w-full sm:w-auto sm:inline-flex">
+        <button v-for="tab in serviceStatusTabs" :key="tab.key"
+                @click="activeServiceTab = tab.key"
+                class="flex-1 sm:flex-none px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+                :class="activeServiceTab === tab.key
+                  ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
+                  : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'">
+          {{ tab.label }}
+          <span v-if="serviceCountByStatus[tab.key]"
+                class="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+            {{ serviceCountByStatus[tab.key] }}
+          </span>
+        </button>
+      </div>
+
+      <div v-if="!filteredServiceOrders.length" class="py-20 flex flex-col items-center gap-3 text-zinc-400">
+        <svg class="size-12" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l5.654-4.654m5.96-4.62a2.625 2.625 0 1 0-5.25 0m5.25 0a2.625 2.625 0 0 1-5.25 0" />
+        </svg>
+        <p class="text-sm">Nema servisnih naloga u izabranom statusu.</p>
+      </div>
+
+      <div v-else class="grid gap-5 grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3">
+        <div v-for="so in filteredServiceOrders" :key="so.id"
+             class="flex flex-col rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-zinc-100 dark:border-zinc-800">
+            <div class="flex items-start justify-between gap-3 mb-2">
+              <div class="min-w-0">
+                <p class="text-base font-bold text-zinc-900 dark:text-white tracking-tight">{{ so.item_name }}</p>
+                <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400 truncate">
+                  {{ so.project.name }}
+                  <span v-if="so.project.city" class="font-normal text-zinc-400 dark:text-zinc-500"> · {{ so.project.city }}</span>
+                </p>
+              </div>
+              <span class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold" :class="serviceStatusClass(so.status)">
+                {{ so.status_label }}
+              </span>
+            </div>
+            <div class="space-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+              <p>Količina: <span class="font-semibold text-zinc-700 dark:text-zinc-300">{{ so.quantity_sent }} {{ so.item_unit ?? '' }}</span></p>
+              <p>Vodja: <span class="font-semibold text-zinc-700 dark:text-zinc-300">{{ so.created_by ?? 'Nepoznato' }}</span></p>
+              <p>Otvoreno: <span class="font-semibold text-zinc-700 dark:text-zinc-300">{{ so.sent_at }}</span></p>
+              <p v-if="so.source_label">Izvor: <span class="font-semibold text-zinc-700 dark:text-zinc-300">{{ so.source_label }}</span></p>
+            </div>
+          </div>
+
+          <div class="flex-1 px-5 py-3 space-y-2 text-sm text-zinc-600 dark:text-zinc-300">
+            <p v-if="so.note" class="italic">Napomena vodje: {{ so.note }}</p>
+            <p v-if="so.procurement_note" class="italic">Napomena nabavke: {{ so.procurement_note }}</p>
+            <p v-if="so.supplier_name || so.supplier_email" class="text-xs text-zinc-500 dark:text-zinc-400">
+              Dobavljač: <span class="text-zinc-700 dark:text-zinc-300">{{ so.supplier_name || 'Nije upisano' }}</span><template v-if="so.supplier_email"> ({{ so.supplier_email }})</template>
+            </p>
+            <p v-if="so.handled_by || so.forwarded_at || so.returned_at" class="text-xs text-zinc-500 dark:text-zinc-400">
+              Obradio: <span class="text-zinc-700 dark:text-zinc-300">{{ so.handled_by ?? 'u obradi' }}</span>
+              <template v-if="so.forwarded_at"> · Proslijeđeno: {{ so.forwarded_at }}</template>
+              <template v-if="so.returned_at"> · Vraćeno: {{ so.returned_at }}</template>
+            </p>
+          </div>
+
+          <div v-if="serviceActioning[so.id] === 'send'" class="px-5 pb-3 space-y-2">
+            <div>
+              <label class="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">Naziv dobavljača <span class="text-red-500">*</span></label>
+              <input type="text" v-model="serviceForm[so.id].supplier_name"
+                     class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-sm text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">Email dobavljača</label>
+              <input type="email" v-model="serviceForm[so.id].supplier_email"
+                     class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-sm text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">Napomena</label>
+              <textarea v-model="serviceForm[so.id].procurement_note" rows="2"
+                        class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-sm text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+            </div>
+          </div>
+
+          <div v-if="serviceActioning[so.id] === 'return'" class="px-5 pb-3">
+            <label class="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">Napomena povrata</label>
+            <textarea v-model="serviceForm[so.id].procurement_note" rows="2"
+                      class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-sm text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"></textarea>
+          </div>
+
+          <div class="px-5 py-4 border-t border-zinc-100 dark:border-zinc-800">
+            <template v-if="so.status === 'pending_procurement'">
+              <div v-if="serviceActioning[so.id] === 'send'" class="flex gap-2">
+                <button @click="confirmServiceSend(so)" :disabled="serviceBusy[so.id] || !serviceForm[so.id]?.supplier_name"
+                        class="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-50">
+                  {{ serviceBusy[so.id] ? 'Slanje...' : 'Potvrdi slanje' }}
+                </button>
+                <button @click="cancelServiceAction(so.id)"
+                        class="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                  Odustani
+                </button>
+              </div>
+              <button v-else @click="startServiceSend(so)"
+                      class="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors">
+                Proslijedi dobavljaču
+              </button>
+            </template>
+
+            <template v-else-if="so.status === 'sent_to_supplier'">
+              <div v-if="serviceActioning[so.id] === 'return'" class="flex gap-2">
+                <button @click="confirmServiceReturn(so)" :disabled="serviceBusy[so.id]"
+                        class="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition-colors disabled:opacity-50">
+                  {{ serviceBusy[so.id] ? 'Spremanje...' : 'Potvrdi povrat' }}
+                </button>
+                <button @click="cancelServiceAction(so.id)"
+                        class="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                  Odustani
+                </button>
+              </div>
+              <button v-else @click="startServiceReturn(so)"
+                      class="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors">
+                Evidentiraj povrat sa servisa
+              </button>
+            </template>
+
+            <div v-else class="flex items-center justify-center gap-2 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-4 text-emerald-600 dark:text-emerald-400">
+                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+              </svg>
+              <span class="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Servis završen</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
     <!-- ===== Create Purchase Order Modal ===== -->
     <Teleport to="body">
       <div v-if="showModal"
@@ -570,14 +726,20 @@ import { BASE } from '../../utils/base'
 const loading       = ref(true)
 const workOrders    = ref([])
 const orders        = ref([])
+const serviceOrders = ref([])
 
 const activeMainTab   = ref('nalozi')
 const activeStatusTab = ref('kreirana')
+const activeServiceTab = ref('pending_procurement')
+const activeWorkOrderTab = ref('pending')
 
 const actioning = reactive({})   // value: 'order' | 'send' | 'deliver' | false
 const busy      = reactive({})
 const notes     = reactive({})
 const supplierData = reactive({}) // keyed by po.id: { name, email }
+const serviceActioning = reactive({})
+const serviceBusy = reactive({})
+const serviceForm = reactive({})
 
 // Modal state
 const showModal      = ref(false)
@@ -594,6 +756,17 @@ const statusTabs = [
   { key: 'isporucena', label: 'Isporučena' },
 ]
 
+const workOrderTabs = [
+  { key: 'pending', label: 'Na čekanju / parcijalno' },
+  { key: 'completed', label: 'Završeni radni nalozi' },
+]
+
+const serviceStatusTabs = [
+  { key: 'pending_procurement', label: 'Čeka slanje na servis' },
+  { key: 'sent_to_supplier', label: 'Kod dobavljača' },
+  { key: 'returned', label: 'Vraćeno' },
+]
+
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const countByStatus = computed(() => {
   const counts = { kreirana: 0, narucena: 0, isporucena: 0 }
@@ -603,6 +776,25 @@ const countByStatus = computed(() => {
 
 const filteredOrders = computed(() =>
   orders.value.filter(o => o.status === activeStatusTab.value)
+)
+
+const workOrderCountByTab = computed(() => ({
+  pending: workOrders.value.filter(wo => !woAllOrdered(wo)).length,
+  completed: workOrders.value.filter(wo => woAllOrdered(wo)).length,
+}))
+
+const filteredWorkOrders = computed(() =>
+  workOrders.value.filter(wo => activeWorkOrderTab.value === 'completed' ? woAllOrdered(wo) : !woAllOrdered(wo))
+)
+
+const serviceCountByStatus = computed(() => {
+  const counts = { pending_procurement: 0, sent_to_supplier: 0, returned: 0 }
+  serviceOrders.value.forEach(o => { if (counts[o.status] !== undefined) counts[o.status]++ })
+  return counts
+})
+
+const filteredServiceOrders = computed(() =>
+  serviceOrders.value.filter(o => o.status === activeServiceTab.value)
 )
 
 // All items from all work orders, flattened, with wo_name attached
@@ -642,6 +834,14 @@ function statusClass(s) {
   }[s] ?? ''
 }
 
+function serviceStatusClass(status) {
+  return {
+    pending_procurement: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    sent_to_supplier: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    returned: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  }[status] ?? ''
+}
+
 function woAllOrdered(wo) {
   return wo.items.length > 0 && wo.items.every(i => i.ordered_qty >= i.quantity)
 }
@@ -656,13 +856,15 @@ function itemRemaining(item) {
 async function loadAll() {
   loading.value = true
   try {
-    const [woRes, poRes] = await Promise.all([
+    const [woRes, poRes, soRes] = await Promise.all([
       fetch(`${BASE}/api/nabavka/work-orders`, { headers: { Accept: 'application/json' } }),
       fetch(`${BASE}/api/nabavka/purchase-orders`, { headers: { Accept: 'application/json' } }),
+      fetch(`${BASE}/api/nabavka/service-orders`, { headers: { Accept: 'application/json' } }),
     ])
-    const [woData, poData] = await Promise.all([woRes.json(), poRes.json()])
+    const [woData, poData, soData] = await Promise.all([woRes.json(), poRes.json(), soRes.json()])
     workOrders.value = woData.work_orders ?? []
     orders.value     = poData.orders ?? []
+    serviceOrders.value = soData.orders ?? []
   } finally {
     loading.value = false
   }
@@ -733,6 +935,68 @@ async function confirmDelivered(po) {
       workOrders.value = woData.work_orders ?? []
     }
   } finally { busy[po.id] = false }
+}
+
+function startServiceSend(serviceOrder) {
+  serviceActioning[serviceOrder.id] = 'send'
+  serviceForm[serviceOrder.id] = {
+    supplier_name: serviceOrder.supplier_name ?? '',
+    supplier_email: serviceOrder.supplier_email ?? '',
+    procurement_note: serviceOrder.procurement_note ?? '',
+  }
+}
+
+function startServiceReturn(serviceOrder) {
+  serviceActioning[serviceOrder.id] = 'return'
+  serviceForm[serviceOrder.id] = {
+    supplier_name: serviceOrder.supplier_name ?? '',
+    supplier_email: serviceOrder.supplier_email ?? '',
+    procurement_note: serviceOrder.procurement_note ?? '',
+  }
+}
+
+function cancelServiceAction(id) {
+  serviceActioning[id] = false
+}
+
+async function confirmServiceSend(serviceOrder) {
+  serviceBusy[serviceOrder.id] = true
+  try {
+    const payload = serviceForm[serviceOrder.id] ?? {}
+    const res = await fetch(`${BASE}/api/nabavka/service-orders/${serviceOrder.id}/send-to-supplier`, {
+      method: 'POST', headers: hdrs(),
+      body: JSON.stringify(payload),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      const idx = serviceOrders.value.findIndex(o => o.id === serviceOrder.id)
+      if (idx !== -1) serviceOrders.value[idx] = data.order
+      cancelServiceAction(serviceOrder.id)
+      activeServiceTab.value = 'sent_to_supplier'
+    }
+  } finally {
+    serviceBusy[serviceOrder.id] = false
+  }
+}
+
+async function confirmServiceReturn(serviceOrder) {
+  serviceBusy[serviceOrder.id] = true
+  try {
+    const payload = { procurement_note: serviceForm[serviceOrder.id]?.procurement_note ?? null }
+    const res = await fetch(`${BASE}/api/nabavka/service-orders/${serviceOrder.id}/return`, {
+      method: 'POST', headers: hdrs(),
+      body: JSON.stringify(payload),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      const idx = serviceOrders.value.findIndex(o => o.id === serviceOrder.id)
+      if (idx !== -1) serviceOrders.value[idx] = data.order
+      cancelServiceAction(serviceOrder.id)
+      activeServiceTab.value = 'returned'
+    }
+  } finally {
+    serviceBusy[serviceOrder.id] = false
+  }
 }
 
 // ─── Create PO modal ──────────────────────────────────────────────────────────

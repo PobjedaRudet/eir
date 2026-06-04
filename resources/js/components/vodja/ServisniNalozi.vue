@@ -34,9 +34,9 @@
                   ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
                   : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'">
           {{ tab.label }}
-          <span v-if="tab.key === 'sent' && sentCount"
-                class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
-            {{ sentCount }}
+          <span v-if="tab.key !== 'all' && countByStatus[tab.key]"
+                class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200">
+            {{ countByStatus[tab.key] }}
           </span>
         </button>
       </div>
@@ -46,7 +46,7 @@
         <svg class="size-10 mx-auto mb-3 opacity-40" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l5.654-4.654m5.96-4.62a2.625 2.625 0 1 0-5.25 0m5.25 0a2.625 2.625 0 0 1-5.25 0" />
         </svg>
-        <p class="text-sm">Nema servisnih naloga{{ activeTab === 'sent' ? ' na čekanju' : '' }}.</p>
+        <p class="text-sm">Nema servisnih naloga u izabranom statusu.</p>
       </div>
 
       <!-- Orders list -->
@@ -56,9 +56,16 @@
           <div class="flex items-start gap-4 px-4 py-3">
             <!-- Icon -->
             <div class="mt-0.5 shrink-0 size-8 rounded-lg flex items-center justify-center"
-                 :class="so.status === 'sent' ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'">
-              <svg v-if="so.status === 'sent'" class="size-4 text-orange-600 dark:text-orange-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                 :class="so.status === 'pending_procurement'
+                   ? 'bg-amber-100 dark:bg-amber-900/30'
+                   : so.status === 'sent_to_supplier'
+                     ? 'bg-blue-100 dark:bg-blue-900/30'
+                     : 'bg-emerald-100 dark:bg-emerald-900/30'">
+              <svg v-if="so.status === 'pending_procurement'" class="size-4 text-amber-600 dark:text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l5.654-4.654m5.96-4.62a2.625 2.625 0 1 0-5.25 0m5.25 0a2.625 2.625 0 0 1-5.25 0" />
+              </svg>
+              <svg v-else-if="so.status === 'sent_to_supplier'" class="size-4 text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3 15m0 0 3 3m-3-3h15M18 12l3-3m0 0-3-3m3 3H6" />
               </svg>
               <svg v-else class="size-4 text-emerald-600 dark:text-emerald-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -71,33 +78,35 @@
                 <span class="font-medium text-sm text-zinc-900 dark:text-white">{{ so.item_name }}</span>
                 <span class="text-xs text-zinc-400">{{ so.quantity_sent }} / {{ so.item_quantity }} {{ so.item_unit ?? '' }}</span>
                 <span class="px-2 py-0.5 rounded-full text-xs font-medium"
-                      :class="so.status === 'sent'
-                        ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
-                        : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'">
-                  {{ so.status === 'sent' ? 'Na servisu' : 'Vraćeno' }}
+                      :class="badgeClass(so.status)">
+                  {{ so.status_label }}
                 </span>
               </div>
               <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                 Nalog: <span class="font-medium">{{ so.work_order_label }}</span>
                 &nbsp;·&nbsp; Poslano: {{ so.sent_at }}
+                <template v-if="so.forwarded_at">&nbsp;·&nbsp; Proslijeđeno: {{ so.forwarded_at }}</template>
                 <template v-if="so.returned_at">&nbsp;·&nbsp; Vraćeno: {{ so.returned_at }}</template>
               </p>
+              <p v-if="so.supplier_name || so.supplier_email" class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Dobavljač: {{ so.supplier_name || 'Nije upisano' }}<template v-if="so.supplier_email"> ({{ so.supplier_email }})</template>
+              </p>
+              <p v-if="so.handled_by" class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Nabavka: {{ so.handled_by }}
+              </p>
+              <p v-if="so.source_label" class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                Izvor: {{ so.source_label }}
+              </p>
               <p v-if="so.note" class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 italic">{{ so.note }}</p>
+              <p v-if="so.procurement_note" class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 italic">{{ so.procurement_note }}</p>
             </div>
-
-            <!-- Return button -->
-            <button v-if="so.status === 'sent'"
-                    @click="openReturnModal(so)"
-                    class="shrink-0 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition-colors">
-              Evidentuj povratak
-            </button>
           </div>
         </div>
       </div>
     </template>
 
     <!-- Return modal -->
-    <div v-if="returnModal.show"
+    <div v-if="false && returnModal.show"
          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
       <div class="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-xl p-6">
         <h3 class="text-base font-semibold text-zinc-900 dark:text-white mb-1">Evidentiraj povratak</h3>
@@ -131,13 +140,14 @@ const loading     = ref(true)
 const serverError = ref('')
 const project     = ref(null)
 const orders      = ref([])
-const activeTab   = ref('sent')
+const activeTab   = ref('pending_procurement')
 const returning   = ref(false)
 
 const returnModal = reactive({ show: false, order: null, note: '' })
 
 const tabs = [
-  { key: 'sent',     label: 'Na servisu' },
+  { key: 'pending_procurement', label: 'Čeka slanje na servis' },
+  { key: 'sent_to_supplier', label: 'Kod dobavljača' },
   { key: 'returned', label: 'Vraćeno' },
   { key: 'all',      label: 'Svi' },
 ]
@@ -147,7 +157,18 @@ const filteredOrders = computed(() => {
   return orders.value.filter(o => o.status === activeTab.value)
 })
 
-const sentCount = computed(() => orders.value.filter(o => o.status === 'sent').length)
+const countByStatus = computed(() => orders.value.reduce((carry, order) => {
+  carry[order.status] = (carry[order.status] ?? 0) + 1
+  return carry
+}, {}))
+
+function badgeClass(status) {
+  return {
+    pending_procurement: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    sent_to_supplier: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    returned: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  }[status] ?? 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+}
 
 function getProjectId() {
   return window.location.pathname.split('/').at(-2)

@@ -133,18 +133,6 @@
               class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
               Zaključen
             </span>
-            <!-- Resource plan badge -->
-            <span v-if="project.plan_status"
-              class="px-2.5 py-0.5 text-xs font-medium rounded-full"
-              :class="{
-                'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400': project.plan_status === 'draft',
-                'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400': project.plan_status === 'submitted',
-                'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': project.plan_status === 'approved',
-                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': project.plan_status === 'rejected',
-              }"
-            >
-              Plan v{{ project.plan_version }} · {{ { draft: 'Nacrt', submitted: 'Na čekanju', approved: 'Odobren', rejected: 'Odbijen' }[project.plan_status] }}
-            </span>
           </div>
         </div>
 

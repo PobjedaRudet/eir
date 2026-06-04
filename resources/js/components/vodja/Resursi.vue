@@ -33,54 +33,20 @@
 
     <!-- ===== LIST VIEW ===== -->
     <template v-else-if="view === 'list'">
-      <!-- No active plan -->
-      <div v-if="!activeSummary"
-           class="p-8 rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 text-center">
-        <svg class="size-12 mx-auto mb-3 text-zinc-300 dark:text-zinc-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-        </svg>
-        <p class="text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-1">Nema aktivnog plana</p>
-        <p class="text-xs text-zinc-400 dark:text-zinc-500">Čekajte dok projekt menadžer ne kreira radni plan za ovaj projekat.</p>
-      </div>
-
-      <!-- Active plan card -->
-      <div v-if="activeSummary"
-           class="p-4 rounded-xl border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 mb-4">
-        <div class="flex items-start justify-between gap-3 mb-3">
+      <div class="p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 mb-4">
+        <div class="flex items-center justify-between gap-3">
           <div>
-            <div class="flex items-center gap-2 mb-1">
-              <span class="text-xs font-bold uppercase tracking-wider text-green-700 dark:text-green-400">Aktivan radni plan</span>
-              <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200">
-                v.{{ activeSummary.version }}
-              </span>
-            </div>
-            <p v-if="activeSummary.description" class="text-sm text-green-800 dark:text-green-300 italic">"{{ activeSummary.description }}"</p>
-            <p class="text-xs text-green-600 dark:text-green-500 mt-1">
-              <span v-if="activeSummary.created_by">Kreirao: {{ activeSummary.created_by }} · </span>{{ activeSummary.created_at }}
+            <p class="text-sm font-semibold text-zinc-900 dark:text-white">Pregled resursa projekta</p>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+              Dodijeljena oprema i materijal su dostupni za naloge i servis.
             </p>
           </div>
+          <span class="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300">
+            {{ ordersCount }} {{ ordersCount === 1 ? 'nalog' : 'naloga' }}
+          </span>
         </div>
-
-        <!-- Teams -->
-        <div v-if="activeSummary.teams?.length" class="mb-3 space-y-2">
-          <div v-for="team in activeSummary.teams" :key="team.id"
-               class="p-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-green-200 dark:border-green-700">
-            <p class="text-xs font-semibold text-green-700 dark:text-green-400 mb-1.5">
-              {{ team.name }}
-              <span class="font-normal text-green-600 dark:text-green-500 ml-1">({{ team.workers.length }})</span>
-            </p>
-            <div class="flex flex-wrap gap-1">
-              <span v-for="w in team.workers" :key="w.id"
-                    class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 dark:bg-zinc-700 border border-green-200 dark:border-green-600 text-xs text-zinc-700 dark:text-zinc-300">
-                <span class="size-4 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center text-xs font-bold text-green-700 dark:text-green-400">{{ w.name[0].toUpperCase() }}</span>
-                {{ w.name }}
-              </span>
-            </div>
-          </div>
-        </div>
-
         <button @click="openOrders"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-700 hover:bg-green-800 text-white text-sm font-medium transition-colors">
+                class="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-700 hover:bg-green-800 text-white text-sm font-medium transition-colors">
           <svg class="size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
           </svg>
@@ -88,22 +54,68 @@
         </button>
       </div>
 
-      <!-- Plan history -->
-      <div v-if="plans.length > 1">
-        <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-3">Prethodni planovi</h2>
-        <div class="space-y-2">
-          <div v-for="plan in plans.slice(1)" :key="plan.id"
-               class="flex items-center gap-3 p-3 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900">
-            <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
-              v.{{ plan.version }}
-            </span>
-            <div class="flex-1 min-w-0">
-              <p v-if="plan.description" class="text-xs text-zinc-500 italic truncate">"{{ plan.description }}"</p>
-              <p class="text-xs text-zinc-400">{{ plan.teams?.length ?? 0 }} timova · {{ plan.created_at }}</p>
+      <div v-if="assignedResources.equipment.length || assignedResources.materials.length" class="mb-5 space-y-4">
+        <div>
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2">Dodijeljena oprema</h2>
+          <div v-if="assignedResources.equipment.length" class="grid gap-2 sm:grid-cols-2">
+            <div v-for="item in assignedResources.equipment" :key="`equipment-${item.id}`"
+                 class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-sm font-medium text-zinc-900 dark:text-white">{{ item.name }}</p>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ item.category }}</p>
+                </div>
+                <span class="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  {{ item.quantity }} {{ item.unit }}
+                </span>
+              </div>
+              <div v-if="item.service_qty_sent > 0" class="mt-2 flex flex-wrap gap-1">
+                <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                  Na servisu ({{ item.service_qty_sent }})
+                </span>
+              </div>
+              <div v-if="item.sources?.length" class="mt-2 flex flex-wrap gap-1">
+                <span v-for="source in item.sources" :key="source"
+                      class="px-2 py-0.5 rounded-full text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                  {{ source }}
+                </span>
+              </div>
+              <button v-if="(item.service_qty_sent ?? 0) < item.quantity"
+                      @click="openServiceModal(item, 'assigned')"
+                      class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:hover:bg-orange-900/40 text-xs font-medium transition-colors">
+                Pošalji na servis
+              </button>
             </div>
           </div>
+          <p v-else class="text-sm text-zinc-400 dark:text-zinc-500 italic">Nema dodijeljene opreme.</p>
+        </div>
+
+        <div>
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2">Dodijeljeni materijal</h2>
+          <div v-if="assignedResources.materials.length" class="grid gap-2 sm:grid-cols-2">
+            <div v-for="item in assignedResources.materials" :key="`material-${item.id}`"
+                 class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-sm font-medium text-zinc-900 dark:text-white">{{ item.name }}</p>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ item.category }}</p>
+                </div>
+                <span class="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800">
+                  {{ item.quantity }} {{ item.unit }}
+                </span>
+              </div>
+              <div v-if="item.sources?.length" class="mt-2 flex flex-wrap gap-1">
+                <span v-for="source in item.sources" :key="source"
+                      class="px-2 py-0.5 rounded-full text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                  {{ source }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <p v-else class="text-sm text-zinc-400 dark:text-zinc-500 italic">Nema dodijeljenog materijala.</p>
         </div>
       </div>
+
     </template>
 
     <!-- ===== ORDERS VIEW ===== -->
@@ -118,7 +130,7 @@
         </button>
         <div>
           <h2 class="text-base font-bold text-zinc-900 dark:text-white">Nalozi resursa</h2>
-          <p class="text-xs text-zinc-500 dark:text-zinc-400">Plan v.{{ activeSummary?.version }} — {{ project?.name }}</p>
+          <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ project?.name }}</p>
         </div>
       </div>
 
@@ -217,21 +229,6 @@
                 </span>
                 <span class="flex-1 text-sm text-zinc-800 dark:text-zinc-200">{{ item.resource_name }}</span>
                 <span class="text-sm text-zinc-500 dark:text-zinc-400 shrink-0">{{ item.quantity }} {{ item.unit ?? '' }}</span>
-                <!-- Service status badge -->
-                <span v-if="item.service_qty_sent > 0"
-                      class="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
-                  Na servisu ({{ item.service_qty_sent }})
-                </span>
-                <span v-else-if="item.service_status === 'returned'"
-                      class="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                  Vraćeno
-                </span>
-                <!-- Send to service button: equipment, approved order, still has remaining quantity -->
-                <button v-if="item.resource_type === 'equipment' && order.status === 'approved' && (item.service_qty_sent ?? 0) < item.quantity"
-                        @click="openServiceModal(item)"
-                        class="shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-orange-50 text-orange-600 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:hover:bg-orange-900/40 transition-colors">
-                  Pošalji na servis
-                </button>
                 <button @click="removeOrderItem(order, item)"
                         class="p-1 text-zinc-400 hover:text-red-500 transition-colors shrink-0">
                   <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -290,7 +287,7 @@
        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
     <div class="w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl shadow-xl p-6">
       <h3 class="text-base font-semibold text-zinc-900 dark:text-white mb-1">Pošalji na servis</h3>
-      <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-4">{{ serviceModal.item?.resource_name }}</p>
+      <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-4">{{ serviceModal.item?.resource_name ?? serviceModal.item?.name }}</p>
       <label class="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
         Količina (dostupno: {{ serviceModal.item ? serviceModal.item.quantity - (serviceModal.item.service_qty_sent ?? 0) : '' }} {{ serviceModal.item?.unit ?? '' }})
       </label>
@@ -321,9 +318,8 @@ const loading      = ref(true)
 const serverError  = ref('')
 
 const project      = ref(null)
-const plans        = ref([])
-const activeSummary = ref(null)
 const ordersCount  = ref(0)
+const assignedResources = ref({ equipment: [], materials: [] })
 
 const orders         = ref([])
 const ordersLoading  = ref(false)
@@ -367,11 +363,11 @@ function statusClass(s) {
 
 async function loadList() {
   try {
-    const res  = await fetch(`${BASE}/api/vodja/projects/${getProjectId()}/plans`, { headers: { Accept: 'application/json' } })
+    const res  = await fetch(`${BASE}/api/vodja/projects/${getProjectId()}/resources`, { headers: { Accept: 'application/json' } })
     const data = await res.json()
     project.value       = data.project
-    plans.value         = data.plans ?? []
-    activeSummary.value = data.active  ?? null
+    assignedResources.value = data.assigned_resources ?? { equipment: [], materials: [] }
+    catalog.value       = data.catalog ?? { equipment: [], materials: [], services: [] }
     ordersCount.value   = data.orders_count ?? 0
   } catch {
     serverError.value = 'Greška pri učitavanju podataka.'
@@ -388,7 +384,7 @@ async function openOrders() {
       fetch(`${BASE}/api/vodja/projects/${getProjectId()}/orders`, { headers: { Accept: 'application/json' } }),
       catalog.value.equipment.length
         ? Promise.resolve(null)
-        : fetch(`${BASE}/api/vodja/catalog`, { headers: { Accept: 'application/json' } }),
+        : fetch(`${BASE}/api/vodja/catalog?project_id=${getProjectId()}`, { headers: { Accept: 'application/json' } }),
     ])
     orders.value = (await ordersRes.json()).orders ?? []
     if (catalogRes) {
@@ -407,7 +403,7 @@ async function createOrder() {
     const res  = await fetch(`${BASE}/api/vodja/projects/${getProjectId()}/orders`, {
       method: 'POST',
       headers: hdrs(),
-      body: JSON.stringify({ ...newOrderForm, plan_id: activeSummary.value.id }),
+      body: JSON.stringify({ ...newOrderForm }),
     })
     const data = await res.json()
     if (!res.ok) { newOrderError.value = data.message ?? 'Greška.'; return }
@@ -477,7 +473,11 @@ const serviceModal = reactive({ show: false, item: null, quantity: 1, sending: f
 
 function openServiceModal(item) {
   const remaining = item.quantity - (item.service_qty_sent ?? 0)
-  serviceModal.item     = item
+  serviceModal.item     = {
+    ...item,
+    resource_name: item.resource_name ?? item.name,
+    resource_id: item.id,
+  }
   serviceModal.quantity = remaining > 0 ? Math.min(1, remaining) : 1
   serviceModal.show     = true
 }
@@ -489,7 +489,7 @@ async function confirmSendToService() {
     const res = await fetch(`${BASE}/api/vodja/service-orders`, {
       method: 'POST',
       headers: hdrs(),
-      body: JSON.stringify({ work_order_item_id: item.id, quantity_sent: serviceModal.quantity }),
+      body: JSON.stringify({ project_id: project.value?.id, resource_id: item.resource_id, quantity_sent: serviceModal.quantity }),
     })
     if (res.ok) {
       const data = await res.json()

@@ -83,10 +83,6 @@
         <div class="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-700 pb-2">
           <h2 class="text-sm font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Timovi</h2>
           <div class="flex items-center gap-3">
-            <a :href="`${BASE}/vodja/timovi-katalog`" target="_blank"
-               class="text-xs text-teal-600 dark:text-teal-400 hover:underline">
-              Katalog timova →
-            </a>
             <button type="button" @click="addTeam" :disabled="teamsCatalog.length === 0"
                     class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-600 text-white text-xs font-medium hover:bg-teal-700 transition-colors disabled:opacity-40">
               <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -99,8 +95,7 @@
 
         <div v-if="teamsCatalog.length === 0"
              class="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3">
-          Nema timova u katalogu.
-          <a :href="`${BASE}/vodja/timovi-katalog`" target="_blank" class="underline">Kreirajte timove →</a>
+          Nema dostupnih timova za dodjelu projektu.
         </div>
         <div v-else-if="form.teams.length === 0"
              class="text-sm text-zinc-400 dark:text-zinc-500 italic py-2">
@@ -131,10 +126,6 @@
             <div>
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Radnici</span>
-                <a :href="`${BASE}/vodja/radnici`" target="_blank"
-                   class="text-xs text-teal-600 dark:text-teal-400 hover:underline">
-                  Upravljaj radnicima →
-                </a>
               </div>
               <div v-if="workersAll.length === 0" class="text-xs text-zinc-400 italic">Nema radnika u sistemu.</div>
               <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">

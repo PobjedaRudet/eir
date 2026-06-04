@@ -39,11 +39,6 @@ class MpmApiController extends Controller
             ->latest()
             ->get()
             ->map(function (Project $p) {
-                $latestPlan = ResourcePlan::where('project_id', $p->id)
-                    ->with('reviewer')
-                    ->orderBy('version', 'desc')
-                    ->first();
-
                 return [
                     'id' => $p->id,
                     'name' => $p->name,
@@ -54,11 +49,6 @@ class MpmApiController extends Controller
                     'streets' => $p->streets->map(fn ($s) => ['id' => $s->id, 'name' => $s->name]),
                     'entries_count' => $p->workEntries->count(),
                     'workers_count' => $p->workers->count(),
-                    'plan_status' => $latestPlan?->status,
-                    'plan_version' => $latestPlan?->version,
-                    'plan_reviewed_at' => $latestPlan?->reviewed_at?->format('d.m.Y. H:i'),
-                    'plan_reviewed_by' => $latestPlan?->reviewer?->name,
-                    'plan_review_note' => $latestPlan?->review_note,
                 ];
             });
 
@@ -621,7 +611,7 @@ class MpmApiController extends Controller
     public function pendingOrders(): JsonResponse
     {
         $orders = WorkOrder::where('status', WorkOrder::STATUS_SUBMITTED)
-            ->with(['project.city', 'creator', 'plan', 'items'])
+            ->with(['project.city', 'creator', 'items'])
             ->orderBy('created_at')
             ->get()
             ->map(fn ($o) => [
@@ -630,7 +620,6 @@ class MpmApiController extends Controller
                 'description' => $o->description,
                 'date' => $o->date->format('d.m.Y.'),
                 'created_by' => $o->creator?->name,
-                'plan_version' => $o->plan?->version,
                 'project' => [
                     'id' => $o->project->id,
                     'name' => $o->project->name,

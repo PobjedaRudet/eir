@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Mail\ServiceOrderMail;
 use App\Mail\PurchaseOrderMail;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
+use App\Models\ServiceOrder;
 use App\Models\User;
 use App\Models\WorkOrder;
 use App\Models\WorkOrderItem;
 use App\Notifications\OrderDeliveredNotification;
 use App\Notifications\PurchaseOrderCreatedNotification;
+use App\Notifications\ServiceOrderForwardedNotification;
+use App\Notifications\ServiceOrderReturnedNotification;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +24,17 @@ use Illuminate\Support\Facades\Mail;
 
 class NabavkaApiController extends Controller
 {
+    public function serviceOrders(): JsonResponse
+    {
+        $orders = ServiceOrder::with(['project.city', 'creator', 'handler'])
+            ->orderByRaw("FIELD(status, 'pending_procurement', 'sent_to_supplier', 'returned')")
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(fn (ServiceOrder $serviceOrder) => $this->formatServiceOrder($serviceOrder));
+
+        return response()->json(['orders' => $orders]);
+    }
+
     /**
      * List all approved work orders with item-level ordered/unordered tracking.
      */
@@ -44,9 +59,9 @@ class NabavkaApiController extends Controller
                 'date'       => $wo->date->format('d.m.Y.'),
                 'created_by' => $wo->creator?->name,
                 'project'    => [
-                    'id'   => $wo->project->id,
-                    'name' => $wo->project->name,
-                    'city' => $wo->project->city?->name,
+                    'id'   => $wo->project?->id,
+                    'name' => $wo->project?->name ?? 'Obrisan projekat',
+                    'city' => $wo->project?->city?->name,
                 ],
                 'items' => $wo->items->map(fn ($i) => [
                     'id'            => $i->id,
@@ -207,11 +222,66 @@ class NabavkaApiController extends Controller
             $wo->creator?->notify(new OrderDeliveredNotification(
                 $purchaseOrder,
                 $wo->order_label,
-                $wo->project->name,
+                $wo->project?->name ?? 'Obrisan projekat',
             ));
         }
 
         return response()->json(['order' => $this->format($purchaseOrder)]);
+    }
+
+    public function sendServiceOrderToSupplier(Request $request, ServiceOrder $serviceOrder): JsonResponse
+    {
+        if ($serviceOrder->status !== ServiceOrder::STATUS_PENDING_PROCUREMENT) {
+            return response()->json(['message' => 'Servisni nalog ne čeka obradu nabavke.'], 422);
+        }
+
+        $data = $request->validate([
+            'supplier_name' => 'required|string|max:200',
+            'supplier_email' => 'nullable|email|max:200',
+            'procurement_note' => 'nullable|string|max:1000',
+        ]);
+
+        $serviceOrder->update([
+            'status' => ServiceOrder::STATUS_SENT_TO_SUPPLIER,
+            'supplier_name' => $data['supplier_name'],
+            'supplier_email' => $data['supplier_email'] ?? null,
+            'procurement_note' => $data['procurement_note'] ?? null,
+            'forwarded_at' => now(),
+            'handled_by' => Auth::id(),
+        ]);
+
+        $serviceOrder->load(['project.city', 'creator', 'handler']);
+
+        if (!empty($data['supplier_email'])) {
+            Mail::to($data['supplier_email'])->send(new ServiceOrderMail($serviceOrder));
+        }
+
+        $serviceOrder->creator?->notify(new ServiceOrderForwardedNotification($serviceOrder));
+
+        return response()->json(['order' => $this->formatServiceOrder($serviceOrder)]);
+    }
+
+    public function returnServiceOrder(Request $request, ServiceOrder $serviceOrder): JsonResponse
+    {
+        if ($serviceOrder->status !== ServiceOrder::STATUS_SENT_TO_SUPPLIER) {
+            return response()->json(['message' => 'Servisni nalog nije kod dobavljača.'], 422);
+        }
+
+        $data = $request->validate([
+            'procurement_note' => 'nullable|string|max:1000',
+        ]);
+
+        $serviceOrder->update([
+            'status' => ServiceOrder::STATUS_RETURNED,
+            'returned_at' => now(),
+            'procurement_note' => $data['procurement_note'] ?? $serviceOrder->procurement_note,
+            'handled_by' => Auth::id(),
+        ]);
+
+        $serviceOrder->load(['project', 'creator', 'handler']);
+        $serviceOrder->creator?->notify(new ServiceOrderReturnedNotification($serviceOrder));
+
+        return response()->json(['order' => $this->formatServiceOrder($serviceOrder)]);
     }
 
     private function format(PurchaseOrder $po): array
@@ -235,9 +305,9 @@ class NabavkaApiController extends Controller
                 'id'      => $wo->id,
                 'name'    => $wo->order_label,
                 'project' => [
-                    'id'   => $wo->project->id,
-                    'name' => $wo->project->name,
-                    'city' => $wo->project->city?->name,
+                    'id'   => $wo->project?->id,
+                    'name' => $wo->project?->name ?? 'Obrisan projekat',
+                    'city' => $wo->project?->city?->name,
                 ],
             ]),
             'items' => $po->items->map(fn ($i) => [
@@ -247,6 +317,38 @@ class NabavkaApiController extends Controller
                 'quantity'      => (float) $i->quantity,
                 'unit'          => $i->unit,
             ]),
+        ];
+    }
+
+    private function formatServiceOrder(ServiceOrder $serviceOrder): array
+    {
+        return [
+            'id' => $serviceOrder->id,
+            'status' => $serviceOrder->status,
+            'status_label' => match ($serviceOrder->status) {
+                ServiceOrder::STATUS_PENDING_PROCUREMENT => 'Čeka slanje na servis',
+                ServiceOrder::STATUS_SENT_TO_SUPPLIER => 'Kod dobavljača',
+                ServiceOrder::STATUS_RETURNED => 'Vraćeno',
+                default => $serviceOrder->status,
+            },
+            'project' => [
+                'id' => $serviceOrder->project?->id,
+                'name' => $serviceOrder->project?->name ?? 'Obrisan projekat',
+                'city' => $serviceOrder->project?->city?->name,
+            ],
+            'item_name' => $serviceOrder->resource_name,
+            'quantity_sent' => (float) $serviceOrder->quantity_sent,
+            'item_unit' => $serviceOrder->resource_unit,
+            'source_label' => $serviceOrder->source_label,
+            'note' => $serviceOrder->note,
+            'procurement_note' => $serviceOrder->procurement_note,
+            'created_by' => $serviceOrder->creator?->name,
+            'handled_by' => $serviceOrder->handler?->name,
+            'supplier_name' => $serviceOrder->supplier_name,
+            'supplier_email' => $serviceOrder->supplier_email,
+            'sent_at' => $serviceOrder->sent_at?->format('d.m.Y. H:i'),
+            'forwarded_at' => $serviceOrder->forwarded_at?->format('d.m.Y. H:i'),
+            'returned_at' => $serviceOrder->returned_at?->format('d.m.Y. H:i'),
         ];
     }
 }

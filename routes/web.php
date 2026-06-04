@@ -37,8 +37,11 @@ Route::middleware(['auth', 'verified', 'role:vodja'])->group(function () {
         Route::get('projects', [VodjaApiController::class, 'projects']);
         Route::get('project-form-config', [VodjaApiController::class, 'projectFormConfig']);
         Route::post('cities', [VodjaApiController::class, 'storeCity']);
+        Route::put('cities/{city}', [VodjaApiController::class, 'updateCity']);
+        Route::delete('cities/{city}', [VodjaApiController::class, 'destroyCity']);
         Route::get('cities/{cityId}/streets', [VodjaApiController::class, 'streetsByCity']);
         Route::post('streets', [VodjaApiController::class, 'storeStreet']);
+        Route::delete('streets/{street}', [VodjaApiController::class, 'destroyStreet']);
         Route::post('projects', [VodjaApiController::class, 'storeProject']);
         Route::post('projects/{project}/resubmit', [VodjaApiController::class, 'resubmitProject']);
         Route::patch('projects/{project}/toggle-status', [VodjaApiController::class, 'toggleProjectStatus']);
@@ -61,15 +64,8 @@ Route::middleware(['auth', 'verified', 'role:vodja'])->group(function () {
         Route::put('projects/{project}/gradiliste/equipment', [VodjaApiController::class, 'syncGradilisteEquipment']);
         Route::put('projects/{project}/gradiliste/materials', [VodjaApiController::class, 'syncGradillisteMaterials']);
         Route::put('project-teams/{team}/equipment', [VodjaApiController::class, 'syncTeamEquipment']);
-        // Resource Plans
-        Route::get('projects/{project}/plans', [VodjaApiController::class, 'projectPlans']);
-        Route::post('projects/{project}/plans', [VodjaApiController::class, 'createPlan']);
-        Route::get('plans/{plan}', [VodjaApiController::class, 'planDetail']);
-        Route::post('plans/{plan}/items', [VodjaApiController::class, 'addPlanItem']);
-        Route::patch('plans/{plan}/items/{item}', [VodjaApiController::class, 'updatePlanItem']);
-        Route::delete('plans/{plan}/items/{item}', [VodjaApiController::class, 'removePlanItem']);
-        Route::post('plans/{plan}/submit', [VodjaApiController::class, 'submitPlan']);
-        Route::delete('plans/{plan}', [VodjaApiController::class, 'discardPlan']);
+        // Project resources
+        Route::get('projects/{project}/resources', [VodjaApiController::class, 'projectPlans']);
         // Catalog (for order items)
         Route::get('catalog', [VodjaApiController::class, 'catalog']);
         // Work orders
@@ -115,13 +111,11 @@ Route::middleware(['auth', 'verified', 'role:mpm'])->group(function () {
     Route::redirect('mpm/odobrenja', 'pm/odobrenja', 301);
     Route::redirect('mpm/izvjestaj', 'pm/izvjestaj', 301);
     Route::get('mpm/projekti/{project}/radnici', fn ($project) => redirect("/pm/projekti/{$project}/radnici", 301));
-    Route::get('mpm/projekti/{project}/plan', fn ($project) => redirect("/pm/projekti/{$project}/plan", 301));
 
     Route::view('pm/portal', 'pages.mpm.portal')->name('pm.portal');
     Route::view('pm/novi-projekat', 'pages.mpm.novi-projekat')->name('pm.novi-projekat');
     Route::view('pm/projekti', 'pages.mpm.projekti')->name('pm.projekti');
     Route::view('pm/projekti/{project}/radnici', 'pages.mpm.radnici')->name('pm.radnici');
-    Route::view('pm/projekti/{project}/plan', 'pages.mpm.plan')->name('pm.plan');
     Route::view('pm/oprema', 'pages.mpm.oprema')->name('pm.oprema');
     Route::view('pm/ntv-katalog', 'pages.mpm.ntv-katalog')->name('pm.ntv-katalog');
     Route::view('pm/odobrenja', 'pages.mpm.odobrenja')->name('pm.odobrenja');
@@ -157,14 +151,6 @@ Route::middleware(['auth', 'verified', 'role:mpm'])->group(function () {
         Route::get('projects/pending-approval', [MpmApiController::class, 'pendingProjects']);
         Route::post('projects/{project}/approve', [MpmApiController::class, 'approveProject']);
         Route::post('projects/{project}/reject-approval', [MpmApiController::class, 'rejectProject']);
-        // Resource Plan approvals
-        Route::get('plans/pending', [MpmApiController::class, 'pendingPlans']);
-        Route::post('plans/{plan}/approve', [MpmApiController::class, 'approvePlan']);
-        Route::post('plans/{plan}/reject', [MpmApiController::class, 'rejectPlan']);
-        // MPM Radni plan creation for projects
-        Route::get('projects/{project}/plan', [MpmApiController::class, 'projectPlan']);
-        Route::post('projects/{project}/plan', [MpmApiController::class, 'createProjectPlan']);
-        Route::put('plans/{plan}/teams', [MpmApiController::class, 'syncPlanTeams']);
         // Work order approvals
         Route::get('orders/pending', [MpmApiController::class, 'pendingOrders']);
         Route::post('orders/{order}/approve', [MpmApiController::class, 'approveOrder']);
@@ -185,12 +171,15 @@ Route::middleware(['auth', 'verified', 'role:nabavka'])->group(function () {
 
     Route::prefix('api/nabavka')->group(function () {
         Route::get('work-orders', [NabavkaApiController::class, 'workOrders']);
+        Route::get('service-orders', [NabavkaApiController::class, 'serviceOrders']);
         Route::get('purchase-orders', [NabavkaApiController::class, 'index']);
         Route::post('purchase-orders', [NabavkaApiController::class, 'createPurchaseOrder']);
         Route::post('purchase-orders/{purchaseOrder}/order', [NabavkaApiController::class, 'markOrdered']);
         Route::post('purchase-orders/{purchaseOrder}/send-to-supplier', [NabavkaApiController::class, 'sendToSupplier']);
         Route::get('purchase-orders/{purchaseOrder}/pdf', [NabavkaApiController::class, 'downloadPdf']);
         Route::post('purchase-orders/{purchaseOrder}/deliver', [NabavkaApiController::class, 'markDelivered']);
+        Route::post('service-orders/{serviceOrder}/send-to-supplier', [NabavkaApiController::class, 'sendServiceOrderToSupplier']);
+        Route::post('service-orders/{serviceOrder}/return', [NabavkaApiController::class, 'returnServiceOrder']);
     });
 });
 

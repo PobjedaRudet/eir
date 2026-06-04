@@ -33,18 +33,71 @@
           <div v-if="loadingCities" class="text-sm text-zinc-500">Učitavanje...</div>
           <div v-else-if="cities.length === 0" class="text-sm text-zinc-400">Nema unesenih gradova.</div>
           <div v-else class="space-y-2 max-h-[28rem] overflow-y-auto pr-1">
-            <button
+            <div
               v-for="city in cities"
               :key="city.id"
-              type="button"
-              @click="selectCity(city)"
-              class="w-full text-left rounded-lg border px-3 py-2 transition-colors"
+              class="rounded-lg border px-3 py-2 transition-colors"
               :class="selectedCityId === city.id
                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200'
                 : 'border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-zinc-700 dark:text-zinc-300'"
             >
-              <div class="font-medium text-sm">{{ city.name }}</div>
-            </button>
+              <div v-if="editingCityId === city.id" class="space-y-2">
+                <input v-model.trim="editCityName" type="text" class="input-field" @keyup.esc="cancelCityEdit">
+                <p v-if="cityError" class="text-sm text-red-600">{{ cityError }}</p>
+                <div class="flex items-center gap-2">
+                  <button type="button" class="btn-primary flex-1" :disabled="savingCityId === city.id || !editCityName" @click="saveCity(city)">
+                    {{ savingCityId === city.id ? 'Čuvanje...' : 'Sačuvaj' }}
+                  </button>
+                  <button type="button" class="btn-secondary flex-1" :disabled="savingCityId === city.id" @click="cancelCityEdit">
+                    Otkaži
+                  </button>
+                </div>
+              </div>
+              <div v-else class="flex items-start gap-3">
+                <button
+                  type="button"
+                  @click="selectCity(city)"
+                  class="flex-1 text-left"
+                >
+                  <div class="font-medium text-sm">{{ city.name }}</div>
+                </button>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button type="button" class="text-xs font-medium text-blue-600 hover:text-blue-700" @click.stop="startCityEdit(city)">
+                    Uredi
+                  </button>
+                  <button type="button" class="text-xs font-medium text-red-600 hover:text-red-700 disabled:opacity-50" :disabled="deletingCityId === city.id" @click.stop="deleteCity(city)">
+                    {{ deletingCityId === city.id ? 'Brisanje...' : 'Obriši' }}
+                  </button>
+                </div>
+              </div>
+              <div v-if="deleteConfirmCityId === city.id" class="mt-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 p-3 space-y-2">
+                <p class="text-xs text-red-700 dark:text-red-300">
+                  Za brisanje grada unesite kod <strong>0000</strong>.
+                </p>
+                <input
+                  v-model.trim="deleteConfirmCode"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="4"
+                  placeholder="0000"
+                  class="input-field"
+                  @keyup.esc="cancelDeleteCity"
+                >
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    class="btn-danger flex-1"
+                    :disabled="deletingCityId === city.id || deleteConfirmCode !== '0000'"
+                    @click="confirmDeleteCity(city)"
+                  >
+                    {{ deletingCityId === city.id ? 'Brisanje...' : 'Potvrdi brisanje' }}
+                  </button>
+                  <button type="button" class="btn-secondary flex-1" :disabled="deletingCityId === city.id" @click="cancelDeleteCity">
+                    Otkaži
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -91,7 +144,44 @@
                 :key="street.id"
                 class="rounded-lg border border-neutral-200 dark:border-neutral-700 px-3 py-2 bg-white dark:bg-neutral-900"
               >
-                <p class="text-sm font-medium text-zinc-800 dark:text-zinc-100">{{ street.name }}</p>
+                <div class="flex items-start justify-between gap-3">
+                  <p class="text-sm font-medium text-zinc-800 dark:text-zinc-100">{{ street.name }}</p>
+                  <button
+                    type="button"
+                    class="text-xs font-medium text-red-600 hover:text-red-700 disabled:opacity-50 shrink-0"
+                    :disabled="deletingStreetId === street.id"
+                    @click="deleteStreet(street)"
+                  >
+                    {{ deletingStreetId === street.id ? 'Brisanje...' : 'Obriši' }}
+                  </button>
+                </div>
+                <div v-if="deleteConfirmStreetId === street.id" class="mt-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 p-3 space-y-2">
+                  <p class="text-xs text-red-700 dark:text-red-300">
+                    Za brisanje ulice unesite kod <strong>0000</strong>.
+                  </p>
+                  <input
+                    v-model.trim="deleteStreetConfirmCode"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="4"
+                    placeholder="0000"
+                    class="input-field"
+                    @keyup.esc="cancelDeleteStreet"
+                  >
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      class="btn-danger flex-1"
+                      :disabled="deletingStreetId === street.id || deleteStreetConfirmCode !== '0000'"
+                      @click="confirmDeleteStreet(street)"
+                    >
+                      {{ deletingStreetId === street.id ? 'Brisanje...' : 'Potvrdi brisanje' }}
+                    </button>
+                    <button type="button" class="btn-secondary flex-1" :disabled="deletingStreetId === street.id" @click="cancelDeleteStreet">
+                      Otkaži
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </template>
@@ -120,6 +210,15 @@ const cityError = ref('')
 const streetError = ref('')
 const newCityName = ref('')
 const newStreetName = ref('')
+const editingCityId = ref(null)
+const editCityName = ref('')
+const savingCityId = ref(null)
+const deletingCityId = ref(null)
+const deleteConfirmCityId = ref(null)
+const deleteConfirmCode = ref('')
+const deletingStreetId = ref(null)
+const deleteConfirmStreetId = ref(null)
+const deleteStreetConfirmCode = ref('')
 
 const selectedCity = computed(() => cities.value.find(city => city.id === selectedCityId.value) ?? null)
 
@@ -179,7 +278,32 @@ async function loadStreets(cityId) {
 async function selectCity(city) {
   selectedCityId.value = city.id
   newStreetName.value = ''
+  cityError.value = ''
+  cancelDeleteStreet()
   await loadStreets(city.id)
+}
+
+function startCityEdit(city) {
+  cityError.value = ''
+  cancelDeleteCity()
+  editingCityId.value = city.id
+  editCityName.value = city.name
+}
+
+function cancelCityEdit() {
+  editingCityId.value = null
+  editCityName.value = ''
+  cityError.value = ''
+}
+
+function cancelDeleteCity() {
+  deleteConfirmCityId.value = null
+  deleteConfirmCode.value = ''
+}
+
+function cancelDeleteStreet() {
+  deleteConfirmStreetId.value = null
+  deleteStreetConfirmCode.value = ''
 }
 
 async function createCity() {
@@ -208,6 +332,89 @@ async function createCity() {
     await selectCity(city)
   } finally {
     creatingCity.value = false
+  }
+}
+
+async function saveCity(city) {
+  cityError.value = ''
+  savingCityId.value = city.id
+
+  try {
+    const res = await fetch(`${BASE}/api/vodja/cities/${city.id}`, {
+      method: 'PUT',
+      headers: hdrs(),
+      body: JSON.stringify({ name: editCityName.value }),
+    })
+    const json = await res.json()
+
+    if (!res.ok) {
+      cityError.value = json.message ?? json.errors?.name?.[0] ?? 'Greška pri ažuriranju grada.'
+      return
+    }
+
+    const updatedCity = json.city
+    cities.value = cities.value
+      .map(item => item.id === updatedCity.id ? updatedCity : item)
+      .sort((a, b) => a.name.localeCompare(b.name, 'bs'))
+
+    if (selectedCityId.value === updatedCity.id) {
+      selectedCityId.value = updatedCity.id
+    }
+
+    cancelCityEdit()
+  } finally {
+    savingCityId.value = null
+  }
+}
+
+async function deleteCity(city) {
+  cityError.value = ''
+
+  cancelCityEdit()
+  deleteConfirmCityId.value = city.id
+  deleteConfirmCode.value = ''
+}
+
+async function confirmDeleteCity(city) {
+  cityError.value = ''
+
+  if (deleteConfirmCode.value !== '0000') {
+    cityError.value = 'Za brisanje grada morate unijeti kod 0000.'
+    return
+  }
+
+  deletingCityId.value = city.id
+  try {
+    const res = await fetch(`${BASE}/api/vodja/cities/${city.id}`, {
+      method: 'DELETE',
+      headers: hdrs(),
+      body: JSON.stringify({ confirm_code: deleteConfirmCode.value }),
+    })
+    const json = await res.json()
+
+    if (!res.ok) {
+      cityError.value = json.message ?? 'Greška pri brisanju grada.'
+      return
+    }
+
+    cities.value = cities.value.filter(item => item.id !== city.id)
+
+    if (selectedCityId.value === city.id) {
+      const nextCity = cities.value[0] ?? null
+      selectedCityId.value = nextCity?.id ?? null
+      streets.value = []
+      if (nextCity) {
+        await loadStreets(nextCity.id)
+      }
+    }
+
+    if (editingCityId.value === city.id) {
+      cancelCityEdit()
+    }
+
+    cancelDeleteCity()
+  } finally {
+    deletingCityId.value = null
   }
 }
 
@@ -243,6 +450,41 @@ async function createStreet() {
   }
 }
 
+async function deleteStreet(street) {
+  streetError.value = ''
+  deleteConfirmStreetId.value = street.id
+  deleteStreetConfirmCode.value = ''
+}
+
+async function confirmDeleteStreet(street) {
+  streetError.value = ''
+
+  if (deleteStreetConfirmCode.value !== '0000') {
+    streetError.value = 'Za brisanje ulice morate unijeti kod 0000.'
+    return
+  }
+
+  deletingStreetId.value = street.id
+  try {
+    const res = await fetch(`${BASE}/api/vodja/streets/${street.id}`, {
+      method: 'DELETE',
+      headers: hdrs(),
+      body: JSON.stringify({ confirm_code: deleteStreetConfirmCode.value }),
+    })
+    const json = await res.json()
+
+    if (!res.ok) {
+      streetError.value = json.message ?? 'Greška pri brisanju ulice.'
+      return
+    }
+
+    streets.value = streets.value.filter(item => item.id !== street.id)
+    cancelDeleteStreet()
+  } finally {
+    deletingStreetId.value = null
+  }
+}
+
 onMounted(async () => {
   await loadCities()
   if (selectedCityId.value) {
@@ -260,5 +502,13 @@ onMounted(async () => {
 
 .btn-primary {
   @apply px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50;
+}
+
+.btn-secondary {
+  @apply px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50;
+}
+
+.btn-danger {
+  @apply px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50;
 }
 </style>

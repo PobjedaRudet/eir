@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WorkOrder extends Model
 {
+    const SOURCE_MANUAL = 'manual';
+
+    const SOURCE_ASSIGNMENT_REQUEST = 'assignment_request';
+
     const STATUS_DRAFT = 'draft';
 
     const STATUS_SUBMITTED = 'submitted';
@@ -20,6 +24,7 @@ class WorkOrder extends Model
         'project_id', 'plan_id', 'name', 'description', 'date', 'created_by',
         'status', 'review_note', 'reviewed_at', 'reviewed_by',
         'order_number', 'order_year',
+        'source_type',
     ];
 
     protected $casts = [

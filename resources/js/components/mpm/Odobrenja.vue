@@ -170,12 +170,7 @@
         <div class="p-5">
           <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">
-              <div class="flex items-center gap-2 flex-wrap">
-                <h2 class="text-base font-semibold text-zinc-900 dark:text-white">{{ order.name }}</h2>
-                <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                  Plan v{{ order.plan_version }}
-                </span>
-              </div>
+              <h2 class="text-base font-semibold text-zinc-900 dark:text-white">{{ order.name }}</h2>
               <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                 {{ order.project?.name }}<span v-if="order.project?.city"> · {{ order.project.city }}</span>
               </p>

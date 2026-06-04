@@ -27,6 +27,8 @@ use App\Models\WorkOrder;
 use App\Models\WorkOrderItem;
 use App\Notifications\OrderSubmittedNotification;
 use App\Notifications\ProjectSubmittedNotification;
+use App\Notifications\ResourceDischargeRequiredNotification;
+use App\Notifications\ServiceOrderReadyForProcurementNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -44,10 +46,6 @@ class VodjaApiController extends Controller
             ->latest()
             ->get()
             ->map(function (Project $p) {
-                $latestPlan = ResourcePlan::where('project_id', $p->id)
-                    ->orderBy('version', 'desc')
-                    ->first();
-
                 return [
                     'id'              => $p->id,
                     'name'            => $p->name,
@@ -79,8 +77,6 @@ class VodjaApiController extends Controller
                         ])
                         ->filter(fn ($team) => ! empty($team['name']))
                         ->values(),
-                    'plan_status'     => $latestPlan?->status,
-                    'plan_version'    => $latestPlan?->version,
                 ];
             });
 
@@ -187,6 +183,61 @@ class VodjaApiController extends Controller
         ], 201);
     }
 
+    public function updateCity(Request $request, City $city): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $name = trim($data['name']);
+
+        $alreadyExists = City::query()
+            ->where('name', $name)
+            ->whereKeyNot($city->id)
+            ->exists();
+
+        if ($alreadyExists) {
+            return response()->json([
+                'message' => 'Grad sa tim nazivom već postoji.',
+            ], 422);
+        }
+
+        $city->update([
+            'name' => $name,
+        ]);
+
+        return response()->json([
+            'message' => 'Grad je uspješno ažuriran.',
+            'city'    => [
+                'id'   => $city->id,
+                'name' => $city->name,
+            ],
+        ]);
+    }
+
+    public function destroyCity(Request $request, City $city): JsonResponse
+    {
+        $data = $request->validate([
+            'confirm_code' => 'required|in:0000',
+        ], [
+            'confirm_code.in' => 'Za brisanje grada morate unijeti kod 0000.',
+        ]);
+
+        unset($data);
+
+        if ($city->projects()->exists()) {
+            return response()->json([
+                'message' => 'Grad se ne može obrisati dok postoje projekti vezani za njega.',
+            ], 422);
+        }
+
+        $city->delete();
+
+        return response()->json([
+            'message' => 'Grad je uspješno obrisan.',
+        ]);
+    }
+
     public function storeStreet(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -208,6 +259,33 @@ class VodjaApiController extends Controller
                 'name' => $street->name,
             ],
         ], 201);
+    }
+
+    public function destroyStreet(Request $request, Street $street): JsonResponse
+    {
+        $data = $request->validate([
+            'confirm_code' => 'required|in:0000',
+        ], [
+            'confirm_code.in' => 'Za brisanje ulice morate unijeti kod 0000.',
+        ]);
+
+        unset($data);
+
+        $isUsedInProjects = DB::table('project_street')
+            ->where('street_id', $street->id)
+            ->exists();
+
+        if ($isUsedInProjects || WorkEntry::query()->where('street_id', $street->id)->exists()) {
+            return response()->json([
+                'message' => 'Ulica se ne može obrisati dok je vezana za projekat ili radne unose.',
+            ], 422);
+        }
+
+        $street->delete();
+
+        return response()->json([
+            'message' => 'Ulica je uspješno obrisana.',
+        ]);
     }
 
     public function storeProject(Request $request): JsonResponse
@@ -614,21 +692,43 @@ class VodjaApiController extends Controller
             return response()->json(['message' => 'Tim je već raspušten.'], 422);
         }
 
-        $team->update(['finished_at' => now()]);
+        $team->loadMissing(['project', 'equipment']);
+        $releasedEquipment = $team->equipment->map(fn (Equipment $equipment) => [
+            'name' => $equipment->name,
+            'quantity' => (float) ($equipment->pivot->quantity ?? 0),
+            'unit' => 'kom',
+        ])->values();
 
-        // Remove from project_worker anyone no longer in any active team on this project
-        $stillActiveWorkerIds = DB::table('project_team_users')
-            ->join('project_teams', 'project_team_users.project_team_id', '=', 'project_teams.id')
-            ->where('project_teams.project_id', $team->project_id)
-            ->whereNull('project_teams.finished_at')
-            ->pluck('project_team_users.user_id')
-            ->unique()
-            ->toArray();
+        DB::transaction(function () use ($team) {
+            $team->equipment()->sync([]);
+            $team->update(['finished_at' => now()]);
 
-        $team->project->workers()->sync($stillActiveWorkerIds);
+            // Remove from project_worker anyone no longer in any active team on this project
+            $stillActiveWorkerIds = DB::table('project_team_users')
+                ->join('project_teams', 'project_team_users.project_team_id', '=', 'project_teams.id')
+                ->where('project_teams.project_id', $team->project_id)
+                ->whereNull('project_teams.finished_at')
+                ->pluck('project_team_users.user_id')
+                ->unique()
+                ->toArray();
+
+            $team->project->workers()->sync($stillActiveWorkerIds);
+        });
+
+        if ($releasedEquipment->isNotEmpty()) {
+            User::where('role', 'nabavka')->get()
+                ->each(fn (User $user) => $user->notify(new ResourceDischargeRequiredNotification(
+                    $team->project,
+                    'Tim',
+                    $team->name,
+                    $releasedEquipment->all(),
+                )));
+        }
 
         return response()->json([
-            'message'     => 'Tim je uspješno raspušten.',
+            'message'     => $releasedEquipment->isNotEmpty()
+                ? 'Tim je uspješno raspušten, oprema je razdužena sa tima i nabavka je obaviještena.'
+                : 'Tim je uspješno raspušten.',
             'finished_at' => $team->finished_at,
         ]);
     }
@@ -716,36 +816,32 @@ class VodjaApiController extends Controller
 
     public function projectPlans(Project $project): JsonResponse
     {
-        $plans = ResourcePlan::where('project_id', $project->id)
-            ->with(['creator', 'teams.workers'])
-            ->where('status', ResourcePlan::STATUS_APPROVED)
-            ->orderBy('version', 'desc')
-            ->get()
-            ->map(fn ($plan) => [
-                'id'          => $plan->id,
-                'version'     => $plan->version,
-                'status'      => $plan->status,
-                'description' => $plan->notes,
-                'created_at'  => $plan->created_at->format('d.m.Y. H:i'),
-                'created_by'  => $plan->creator?->name,
-                'teams'       => $plan->teams->map(fn ($t) => [
-                    'id'      => $t->id,
-                    'name'    => $t->name,
-                    'workers' => $t->workers->map(fn ($w) => ['id' => $w->id, 'name' => $w->name])->values(),
-                ])->values(),
-            ]);
+        $assignedResources = $this->buildAssignedResources($project);
 
         return response()->json([
             'project'      => ['id' => $project->id, 'name' => $project->name],
-            'plans'        => $plans,
-            'active'       => $plans->first(),
+            'assigned_resources' => $assignedResources,
+            'catalog'      => $this->buildCatalog($project, $assignedResources),
             'orders_count' => WorkOrder::where('project_id', $project->id)->count(),
         ]);
     }
 
-    public function catalog(): JsonResponse
+    public function catalog(Request $request): JsonResponse
     {
-        return response()->json($this->buildCatalog());
+        $projectId = $request->query('project_id');
+
+        if (! $projectId) {
+            return response()->json($this->buildCatalog());
+        }
+
+        $project = Project::findOrFail($projectId);
+        if ($project->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $assignedResources = $this->buildAssignedResources($project);
+
+        return response()->json($this->buildCatalog($project, $assignedResources));
     }
 
     public function createPlan(Request $request, Project $project): JsonResponse
@@ -809,8 +905,38 @@ class VodjaApiController extends Controller
         ]);
     }
 
-    private function buildCatalog(): array
+    private function buildCatalog(?Project $project = null, ?array $assignedResources = null): array
     {
+        if ($project) {
+            $assignedResources ??= $this->buildAssignedResources($project);
+
+            return [
+                'equipment' => collect($assignedResources['equipment'] ?? [])->map(fn ($e) => [
+                    'id'       => $e['id'],
+                    'name'     => $e['name'],
+                    'category' => $e['category'],
+                    'unit'     => $e['unit'] ?? 'kom',
+                    'quantity' => $e['quantity'] ?? 0,
+                    'sources'  => $e['sources'] ?? [],
+                ])->values(),
+                'materials' => collect($assignedResources['materials'] ?? [])->map(fn ($m) => [
+                    'id'       => $m['id'],
+                    'name'     => $m['name'],
+                    'category' => $m['category'],
+                    'unit'     => $m['unit'] ?? null,
+                    'quantity' => $m['quantity'] ?? 0,
+                    'sources'  => $m['sources'] ?? [],
+                ])->values(),
+                'services' => ProjectService::orderBy('category')->orderBy('name')->get()
+                    ->map(fn ($s) => [
+                        'id'       => $s->id,
+                        'name'     => $s->name,
+                        'category' => ProjectService::CATEGORIES[$s->category] ?? $s->category,
+                        'unit'     => $s->unit,
+                    ])->values(),
+            ];
+        }
+
         return [
             'equipment' => Equipment::orderBy('category')->orderBy('name')->get()
                 ->map(fn ($e) => [
@@ -834,6 +960,135 @@ class VodjaApiController extends Controller
                     'unit'     => $s->unit,
                 ])->values(),
         ];
+    }
+
+    private function buildAssignedResources(Project $project): array
+    {
+        $project->loadMissing(['equipment', 'gradiliste.equipment', 'gradiliste.materials']);
+        $activeTeams = $project->teams()->active()->with('equipment')->get();
+        $approvedOrderItems = WorkOrderItem::query()
+            ->whereHas('workOrder', function ($query) use ($project) {
+                $query->where('project_id', $project->id)
+                    ->where('status', WorkOrder::STATUS_APPROVED)
+                    ->where(function ($sourceQuery) {
+                        $sourceQuery->whereNull('source_type')
+                            ->orWhere('source_type', WorkOrder::SOURCE_MANUAL);
+                    });
+            })
+            ->get();
+        $serviceSentQuantities = $this->serviceSentEquipmentQuantities($project);
+
+        $equipment = [];
+        $materials = [];
+
+        $pushEquipment = function (Equipment $item, float|int $quantity, string $source) use (&$equipment): void {
+            if (! isset($equipment[$item->id])) {
+                $equipment[$item->id] = [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'category' => Equipment::CATEGORIES[$item->category] ?? $item->category,
+                    'unit' => 'kom',
+                    'quantity' => 0,
+                    'sources' => [],
+                ];
+            }
+
+            $equipment[$item->id]['quantity'] += (float) $quantity;
+
+            if (! in_array($source, $equipment[$item->id]['sources'], true)) {
+                $equipment[$item->id]['sources'][] = $source;
+            }
+        };
+
+        $pushMaterial = function (Material $item, float|int $quantity, string $source) use (&$materials): void {
+            if (! isset($materials[$item->id])) {
+                $materials[$item->id] = [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'category' => Material::CATEGORIES[$item->category] ?? $item->category,
+                    'unit' => $item->unit,
+                    'quantity' => 0,
+                    'sources' => [],
+                ];
+            }
+
+            $materials[$item->id]['quantity'] += (float) $quantity;
+
+            if (! in_array($source, $materials[$item->id]['sources'], true)) {
+                $materials[$item->id]['sources'][] = $source;
+            }
+        };
+
+        foreach ($project->equipment as $item) {
+            $pushEquipment($item, $item->pivot->quantity ?? 0, 'Projekat');
+        }
+
+        foreach (($project->gradiliste?->equipment ?? collect()) as $item) {
+            $pushEquipment($item, $item->pivot->quantity ?? 0, 'Gradilište');
+        }
+
+        foreach (($project->gradiliste?->materials ?? collect()) as $item) {
+            $pushMaterial($item, $item->pivot->quantity ?? 0, 'Gradilište');
+        }
+
+        foreach ($activeTeams as $team) {
+            foreach ($team->equipment as $item) {
+                $pushEquipment($item, $item->pivot->quantity ?? 0, 'Tim: ' . $team->name);
+            }
+        }
+
+        foreach ($approvedOrderItems as $item) {
+            if ($item->resource_type === 'equipment') {
+                $equipmentModel = Equipment::find($item->resource_id);
+
+                if ($equipmentModel) {
+                    $pushEquipment($equipmentModel, $item->quantity, 'Nalog');
+                }
+            }
+
+            if ($item->resource_type === 'material') {
+                $materialModel = Material::find($item->resource_id);
+
+                if ($materialModel) {
+                    $pushMaterial($materialModel, $item->quantity, 'Nalog');
+                }
+            }
+        }
+
+        foreach ($equipment as $equipmentId => &$entry) {
+            $serviceQtySent = (float) ($serviceSentQuantities[$equipmentId] ?? 0);
+            $entry['service_qty_sent'] = $serviceQtySent;
+            $entry['service_status'] = $serviceQtySent > 0 ? ($serviceQtySent < (float) $entry['quantity'] ? 'partial' : 'sent') : null;
+        }
+        unset($entry);
+
+        return [
+            'equipment' => collect($equipment)->sortBy(['category', 'name'])->values()->all(),
+            'materials' => collect($materials)->sortBy(['category', 'name'])->values()->all(),
+        ];
+    }
+
+    private function serviceSentEquipmentQuantities(Project $project): array
+    {
+        return ServiceOrder::with('workOrderItem')
+            ->where('project_id', $project->id)
+            ->whereIn('status', [ServiceOrder::STATUS_PENDING_PROCUREMENT, ServiceOrder::STATUS_SENT_TO_SUPPLIER])
+            ->get()
+            ->reduce(function (array $carry, ServiceOrder $order) {
+                $resourceId = $order->resource_id;
+
+                if (! $resourceId && $order->workOrderItem?->resource_type === 'equipment') {
+                    $resourceId = $order->workOrderItem->resource_id;
+                }
+
+                if (! $resourceId) {
+                    return $carry;
+                }
+
+                $carry[(int) $resourceId] = ($carry[(int) $resourceId] ?? 0) + (float) $order->quantity_sent;
+
+                return $carry;
+            }, []);
     }
 
     public function addPlanItem(Request $request, ResourcePlan $plan): JsonResponse
@@ -1091,7 +1346,6 @@ class VodjaApiController extends Controller
         $validated = $request->validate([
             'date'        => 'required|date',
             'description' => 'nullable|string',
-            'plan_id'     => 'required|exists:resource_plans,id',
         ]);
 
         $year       = now()->year;
@@ -1106,6 +1360,7 @@ class VodjaApiController extends Controller
             'project_id'   => $project->id,
             'created_by'   => Auth::id(),
             'status'       => WorkOrder::STATUS_DRAFT,
+            'source_type'  => WorkOrder::SOURCE_MANUAL,
         ]);
 
         return response()->json([
@@ -1156,6 +1411,18 @@ class VodjaApiController extends Controller
             'notes'         => 'nullable|string',
         ]);
 
+        if (in_array($validated['resource_type'], ['equipment', 'material'], true)) {
+            $assignedResources = $this->buildAssignedResources($order->project);
+            $allowedIds = collect($assignedResources[$validated['resource_type'] === 'equipment' ? 'equipment' : 'materials'])
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            if (! in_array((int) $validated['resource_id'], $allowedIds, true)) {
+                return response()->json(['message' => 'Možete dodati samo resurse koji su dodijeljeni projektu, gradilištu ili timu.'], 422);
+            }
+        }
+
         $name = match ($validated['resource_type']) {
             'equipment' => Equipment::find($validated['resource_id'])?->name,
             'material'  => Material::find($validated['resource_id'])?->name,
@@ -1188,7 +1455,7 @@ class VodjaApiController extends Controller
 
     public function projectServiceOrders(Project $project): JsonResponse
     {
-        $orders = ServiceOrder::with(['workOrderItem.workOrder', 'creator'])
+        $orders = ServiceOrder::with(['workOrderItem.workOrder', 'creator', 'handler'])
             ->where('project_id', $project->id)
             ->latest()
             ->get()
@@ -1199,7 +1466,7 @@ class VodjaApiController extends Controller
 
     public function allServiceOrders(): JsonResponse
     {
-        $orders = ServiceOrder::with(['workOrderItem.workOrder', 'creator', 'project'])
+        $orders = ServiceOrder::with(['workOrderItem.workOrder', 'creator', 'handler', 'project'])
             ->latest()
             ->get()
             ->map(function (ServiceOrder $s) {
@@ -1215,73 +1482,93 @@ class VodjaApiController extends Controller
     public function createServiceOrder(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'work_order_item_id' => 'required|integer|exists:work_order_items,id',
+            'project_id'         => 'required|integer|exists:projects,id',
+            'resource_id'        => 'required|integer|exists:equipment,id',
             'quantity_sent'      => 'required|numeric|min:0.01',
             'note'               => 'nullable|string|max:1000',
         ]);
 
-        $item = WorkOrderItem::with('workOrder')->findOrFail($validated['work_order_item_id']);
-
-        // Only equipment can go to service
-        if ($item->resource_type !== 'equipment') {
-            return response()->json(['message' => 'Na servis se može poslati samo oprema.'], 422);
+        $project = Project::findOrFail($validated['project_id']);
+        if ($project->user_id !== Auth::id()) {
+            abort(403);
         }
 
-        // Cannot send more than available (item quantity minus already-sent)
-        $qtySent = ServiceOrder::where('work_order_item_id', $item->id)
-            ->where('status', ServiceOrder::STATUS_SENT)
-            ->sum('quantity_sent');
+        $assignedResources = $this->buildAssignedResources($project);
+        $resource = collect($assignedResources['equipment'] ?? [])->firstWhere('id', (int) $validated['resource_id']);
 
-        if ($qtySent + $validated['quantity_sent'] > $item->quantity) {
+        if (! $resource) {
+            return response()->json(['message' => 'Na servis se može poslati samo oprema dodijeljena projektu.'], 422);
+        }
+
+        $availableQuantity = (float) $resource['quantity'] - (float) ($resource['service_qty_sent'] ?? 0);
+        if ($validated['quantity_sent'] > $availableQuantity) {
             return response()->json(['message' => 'Tražena kolicina prelazi dostupnu kolicinu.'], 422);
         }
 
+        $equipment = Equipment::findOrFail($validated['resource_id']);
+
         $so = ServiceOrder::create([
-            'project_id'         => $item->workOrder->project_id,
-            'work_order_item_id' => $item->id,
+            'project_id'         => $project->id,
+            'work_order_item_id' => null,
+            'resource_type'      => 'equipment',
+            'resource_id'        => $equipment->id,
+            'resource_name'      => $equipment->name,
+            'resource_unit'      => 'kom',
+            'source_label'       => collect($resource['sources'] ?? [])->join(', '),
             'quantity_sent'      => $validated['quantity_sent'],
-            'status'             => ServiceOrder::STATUS_SENT,
+            'status'             => ServiceOrder::STATUS_PENDING_PROCUREMENT,
             'note'               => $validated['note'] ?? null,
             'sent_at'            => now(),
             'created_by'         => Auth::id(),
         ]);
 
-        $so->load(['workOrderItem.workOrder', 'creator']);
+        $so->load(['workOrderItem.workOrder', 'creator', 'project', 'handler']);
+
+        User::where('role', 'nabavka')->get()
+            ->each(fn (User $user) => $user->notify(new ServiceOrderReadyForProcurementNotification($so)));
 
         return response()->json($this->formatServiceOrder($so), 201);
     }
 
     public function returnServiceOrder(Request $request, ServiceOrder $serviceOrder): JsonResponse
     {
-        if ($serviceOrder->status !== ServiceOrder::STATUS_SENT) {
-            return response()->json(['message' => 'Servisni nalog nije u statusu "Na servisu".'], 422);
-        }
-
-        $serviceOrder->update([
-            'status'      => ServiceOrder::STATUS_RETURNED,
-            'returned_at' => now(),
-            'note'        => $request->input('note', $serviceOrder->note),
-        ]);
-
-        return response()->json($this->formatServiceOrder($serviceOrder->fresh(['workOrderItem.workOrder', 'creator'])));
+        return response()->json(['message' => 'Povrat sa servisa sada evidentira nabavka nakon povrata od dobavljača.'], 422);
     }
 
     private function formatServiceOrder(ServiceOrder $s): array
     {
+        $resourceId = $s->resource_id ?? ($s->workOrderItem?->resource_type === 'equipment' ? $s->workOrderItem?->resource_id : null);
+        $assignedEquipment = $resourceId && $s->project
+            ? collect($this->buildAssignedResources($s->project)['equipment'] ?? [])->firstWhere('id', (int) $resourceId)
+            : null;
+
         return [
             'id'                 => $s->id,
             'status'             => $s->status,
+            'status_label'       => match ($s->status) {
+                ServiceOrder::STATUS_PENDING_PROCUREMENT => 'Čeka slanje na servis',
+                ServiceOrder::STATUS_SENT_TO_SUPPLIER => 'Kod dobavljača',
+                ServiceOrder::STATUS_RETURNED => 'Vraćeno',
+                default => $s->status,
+            },
             'note'               => $s->note,
+            'procurement_note'   => $s->procurement_note,
             'quantity_sent'      => $s->quantity_sent,
             'sent_at'            => $s->sent_at?->format('d.m.Y.'),
+            'forwarded_at'       => $s->forwarded_at?->format('d.m.Y. H:i'),
             'returned_at'        => $s->returned_at?->format('d.m.Y.'),
             'created_by'         => $s->creator?->name,
+            'handled_by'         => $s->handler?->name,
+            'supplier_name'      => $s->supplier_name,
+            'supplier_email'     => $s->supplier_email,
             'item_id'            => $s->workOrderItem?->id,
-            'item_name'          => $s->workOrderItem?->resource_name,
-            'item_quantity'      => $s->workOrderItem?->quantity,
-            'item_unit'          => $s->workOrderItem?->unit,
-            'work_order_label'   => $s->workOrderItem?->workOrder?->order_label,
+            'resource_id'        => $resourceId,
+            'item_name'          => $s->resource_name ?? $s->workOrderItem?->resource_name,
+            'item_quantity'      => $assignedEquipment['quantity'] ?? $s->workOrderItem?->quantity,
+            'item_unit'          => $s->resource_unit ?? $s->workOrderItem?->unit,
+            'work_order_label'   => $s->workOrderItem?->workOrder?->order_label ?? 'Direktno iz resursa',
             'work_order_id'      => $s->workOrderItem?->workOrder?->id,
+            'source_label'       => $s->source_label,
         ];
     }
 
@@ -1363,13 +1650,33 @@ class VodjaApiController extends Controller
         $gradiliste = $project->gradiliste
             ?? Gradiliste::create(['project_id' => $project->id]);
 
+        $gradiliste->loadMissing('equipment');
+        $procurementItems = $this->buildPositiveDeltaProcurementItems(
+            'equipment',
+            $gradiliste->equipment->mapWithKeys(fn (Equipment $equipment) => [
+                $equipment->id => (float) ($equipment->pivot->quantity ?? 0),
+            ])->all(),
+            $data['equipment'],
+        );
+
         $sync = collect($data['equipment'])->mapWithKeys(
             fn ($e) => [$e['equipment_id'] => ['quantity' => $e['quantity']]]
         )->toArray();
 
         $gradiliste->equipment()->sync($sync);
 
-        return response()->json(['message' => 'Oprema gradilišta je ažurirana.']);
+        $order = $this->createAutoProcurementOrderForAssignment(
+            $project,
+            'Gradilište',
+            'gradilišta',
+            $procurementItems,
+        );
+
+        return response()->json([
+            'message' => $order
+                ? "Oprema gradilišta je ažurirana. Kreiran je nalog {$order->order_label} i poslan PM-u na odobrenje za dodatnu nabavku."
+                : 'Oprema gradilišta je ažurirana.',
+        ]);
     }
 
     public function syncGradillisteMaterials(Request $request, Project $project): JsonResponse
@@ -1385,13 +1692,33 @@ class VodjaApiController extends Controller
         $gradiliste = $project->gradiliste
             ?? Gradiliste::create(['project_id' => $project->id]);
 
+        $gradiliste->loadMissing('materials');
+        $procurementItems = $this->buildPositiveDeltaProcurementItems(
+            'material',
+            $gradiliste->materials->mapWithKeys(fn (Material $material) => [
+                $material->id => (float) ($material->pivot->quantity ?? 0),
+            ])->all(),
+            $data['materials'],
+        );
+
         $sync = collect($data['materials'])->mapWithKeys(
             fn ($m) => [$m['material_id'] => ['quantity' => $m['quantity']]]
         )->toArray();
 
         $gradiliste->materials()->sync($sync);
 
-        return response()->json(['message' => 'Materijal gradilišta je ažuriran.']);
+        $order = $this->createAutoProcurementOrderForAssignment(
+            $project,
+            'Gradilište',
+            'gradilišta',
+            $procurementItems,
+        );
+
+        return response()->json([
+            'message' => $order
+                ? "Materijal gradilišta je ažuriran. Kreiran je nalog {$order->order_label} i poslan PM-u na odobrenje za dodatnu nabavku."
+                : 'Materijal gradilišta je ažuriran.',
+        ]);
     }
 
     public function syncTeamEquipment(Request $request, ProjectTeam $team): JsonResponse
@@ -1408,12 +1735,115 @@ class VodjaApiController extends Controller
             'equipment.*.quantity'     => 'required|integer|min:1',
         ]);
 
+        $team->loadMissing(['equipment', 'project']);
+        $procurementItems = $this->buildPositiveDeltaProcurementItems(
+            'equipment',
+            $team->equipment->mapWithKeys(fn (Equipment $equipment) => [
+                $equipment->id => (float) ($equipment->pivot->quantity ?? 0),
+            ])->all(),
+            $data['equipment'],
+        );
+
         $sync = collect($data['equipment'])->mapWithKeys(
             fn ($e) => [$e['equipment_id'] => ['quantity' => $e['quantity']]]
         )->toArray();
 
         $team->equipment()->sync($sync);
 
-        return response()->json(['message' => 'Oprema tima je ažurirana.']);
+        $order = $this->createAutoProcurementOrderForAssignment(
+            $team->project,
+            'Tim',
+            $team->name,
+            $procurementItems,
+        );
+
+        return response()->json([
+            'message' => $order
+                ? "Oprema tima je ažurirana. Kreiran je nalog {$order->order_label} i poslan PM-u na odobrenje za dodatnu nabavku."
+                : 'Oprema tima je ažurirana.',
+        ]);
+    }
+
+    private function buildPositiveDeltaProcurementItems(string $resourceType, array $currentQuantities, array $requestedRows): array
+    {
+        $idField = $resourceType === 'equipment' ? 'equipment_id' : 'material_id';
+        $resourceIds = collect($requestedRows)
+            ->pluck($idField)
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($resourceIds->isEmpty()) {
+            return [];
+        }
+
+        $catalog = $resourceType === 'equipment'
+            ? Equipment::whereIn('id', $resourceIds)->get()->keyBy('id')
+            : Material::whereIn('id', $resourceIds)->get()->keyBy('id');
+
+        return collect($requestedRows)
+            ->map(function (array $row) use ($resourceType, $idField, $currentQuantities, $catalog) {
+                $resourceId = (int) ($row[$idField] ?? 0);
+                $requestedQuantity = (float) ($row['quantity'] ?? 0);
+                $currentQuantity = (float) ($currentQuantities[$resourceId] ?? 0);
+                $delta = $requestedQuantity - $currentQuantity;
+
+                if ($delta <= 0) {
+                    return null;
+                }
+
+                $resource = $catalog->get($resourceId);
+                if (! $resource) {
+                    return null;
+                }
+
+                return [
+                    'resource_type' => $resourceType,
+                    'resource_id' => $resourceId,
+                    'resource_name' => $resource->name,
+                    'quantity' => $delta,
+                    'unit' => $resourceType === 'equipment' ? 'kom' : $resource->unit,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function createAutoProcurementOrderForAssignment(Project $project, string $sourceLabel, string $sourceName, array $items): ?WorkOrder
+    {
+        if (empty($items)) {
+            return null;
+        }
+
+        $year = now()->year;
+        $nextNumber = (WorkOrder::where('order_year', $year)->max('order_number') ?? 0) + 1;
+        $label = $nextNumber . '/' . substr((string) $year, -2);
+
+        $order = DB::transaction(function () use ($project, $items, $sourceLabel, $sourceName, $year, $nextNumber, $label) {
+            $order = WorkOrder::create([
+                'project_id' => $project->id,
+                'name' => $label,
+                'description' => "Automatski zahtjev za nabavku iz zaduženja: {$sourceLabel} {$sourceName}",
+                'date' => now()->toDateString(),
+                'created_by' => Auth::id(),
+                'status' => WorkOrder::STATUS_SUBMITTED,
+                'order_number' => $nextNumber,
+                'order_year' => $year,
+                'source_type' => WorkOrder::SOURCE_ASSIGNMENT_REQUEST,
+            ]);
+
+            foreach ($items as $item) {
+                $order->items()->create($item);
+            }
+
+            return $order;
+        });
+
+        $order->load(['creator', 'project', 'items']);
+        User::where('role', 'mpm')->get()
+            ->each(fn (User $mpm) => $mpm->notify(new OrderSubmittedNotification($order)));
+
+        return $order;
     }
 }

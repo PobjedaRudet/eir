@@ -14,18 +14,23 @@ use App\Models\ResourcePlanHistory;
 use App\Models\Street;
 use App\Models\User;
 use App\Models\Operation;
+use App\Models\WorkDayComment;
 use App\Models\WorkEntry;
 use App\Models\WorkOrder;
 use App\Notifications\OrderApprovedNotification;
 use App\Notifications\OrderRejectedNotification;
 use App\Notifications\ProjectApprovedNotification;
 use App\Notifications\WorkOrderReadyForProcurementNotification;
+use DOMDocument;
+use DOMElement;
+use DOMXPath;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use ZipArchive;
 
 class MpmApiController extends Controller
 {
@@ -688,94 +693,287 @@ class MpmApiController extends Controller
 
     public function exportProject(Project $project): StreamedResponse
     {
+        @ini_set('memory_limit', '512M');
+
+        $rows = $this->buildProjectExportRows($project);
+        $teamLabel = $this->buildProjectExportTeamLabel($project);
+        $exportPath = $this->buildProjectExportWorkbook($rows, $teamLabel);
+        $filename = 'projekat-' . Str::slug($project->name) . '-' . now()->format('Y-m-d') . '.xlsx';
+
+        return response()->streamDownload(function () use ($exportPath) {
+            $stream = fopen($exportPath, 'rb');
+
+            if ($stream !== false) {
+                fpassthru($stream);
+                fclose($stream);
+            }
+
+            @unlink($exportPath);
+        }, $filename, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control'       => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma'              => 'no-cache',
+            'Expires'             => '0',
+        ]);
+    }
+
+    private function buildProjectExportRows(Project $project): array
+    {
         $entries = WorkEntry::with(['worker', 'project', 'street', 'enclosure', 'operations'])
             ->where('project_id', $project->id)
             ->orderBy('date')
             ->orderBy('created_at')
             ->get();
 
-        $templatePath = storage_path('app/templates/project-export-template.xlsx');
-        $spreadsheet  = IOFactory::load($templatePath);
-        $sheet        = $spreadsheet->getActiveSheet();
+        $userIds = $entries->pluck('user_id')->filter()->unique()->values();
+        $dates = $entries->pluck('date')->map(fn ($date) => $date->format('Y-m-d'))->unique()->values();
 
-        $workTypes = WorkEntry::WORK_TYPES;
-        $row = 3;
+        $dayComments = WorkDayComment::query()
+            ->when($userIds->isNotEmpty(), fn ($query) => $query->whereIn('user_id', $userIds))
+            ->when($dates->isNotEmpty(), fn ($query) => $query->whereIn('date', $dates))
+            ->get()
+            ->keyBy(fn (WorkDayComment $comment) => $comment->user_id . '|' . $comment->date->format('Y-m-d'));
+
+        $teamNames = DB::table('project_team_users')
+            ->join('project_teams', 'project_team_users.project_team_id', '=', 'project_teams.id')
+            ->where('project_teams.project_id', $project->id)
+            ->whereNull('project_teams.finished_at')
+            ->select('project_team_users.user_id', 'project_teams.name')
+            ->get()
+            ->mapWithKeys(fn ($row) => [(int) $row->user_id => $row->name])
+            ->all();
+
+        $rows = [];
 
         foreach ($entries as $entry) {
+            $dayKey = $entry->user_id . '|' . $entry->date->format('Y-m-d');
+            $dayComment = $dayComments->get($dayKey)?->comment ?? '';
+            $teamName = $teamNames[$entry->user_id] ?? '';
+
             $base = [
-                1  => $entry->project->name,
-                2  => $entry->worker->name,
-                3  => $entry->cable_type,
-                4  => $entry->enclosure?->name ?? '',
-                5  => $entry->date->format('d.m.Y.'),
-                6  => $entry->street?->name ?? '',
-                7  => collect($entry->work_types ?? [])
-                         ->map(fn ($w) => $workTypes[$w] ?? $w)
-                         ->join(', '),
+                'A' => $entry->date->format('W'),
+                'B' => $teamName,
+                'C' => $entry->date->format('d.m.Y.'),
+                'D' => 'TTTT',
+                'E' => $entry->cable_type,
+                'F' => $entry->enclosure?->name ?? '',
+                'H' => '',
+                'K' => '',
+                'L' => '',
+                'M' => '',
+                'O' => '',
+                'Q' => '',
+                'R' => '',
+                'S' => '',
+                'T' => '',
+                'U' => '',
+                'V' => '',
+                'W' => '',
+                'X' => '',
+                'Y' => '',
+                'Z' => '',
+                'AA' => '',
+                'AB' => '',
+                'AC' => '',
+                'AD' => $dayComment,
             ];
 
-            $operations = $entry->operations;
+            if ($entry->operations->isEmpty()) {
+                $rows[] = $base + [
+                    'G' => $entry->street?->name ?? '',
+                ];
 
-            if ($operations->isEmpty()) {
-                foreach ($base as $col => $val) {
-                    $sheet->setCellValueByColumnAndRow($col, $row, $val);
-                }
-                $row++;
                 continue;
             }
 
-            foreach ($operations as $op) {
-                if ($op->kind === Operation::KINDS['iskop'] || $op->kind === 'iskop') {
-                    $subOps = $op->sub_operations ?? [];
+            foreach ($entry->operations as $operation) {
+                $operationLabel = Operation::KINDS[$operation->kind] ?? Str::headline((string) $operation->kind);
+                $excavationLabel = $operation->excavation_type
+                    ? (Operation::EXCAVATION_TYPES[$operation->excavation_type] ?? $operation->excavation_type)
+                    : '';
+                $address = trim(collect([$entry->street?->name, $operation->address])->filter()->join(' '));
+                $meterage = $operation->meterage ?? '';
+                $hasHp = $operation->kind === 'ha_plus' || !empty($operation->sub_operations ?? []);
 
-                    if (empty($subOps)) {
-                        foreach ($base as $col => $val) {
-                            $sheet->setCellValueByColumnAndRow($col, $row, $val);
-                        }
-                        $sheet->setCellValueByColumnAndRow(8,  $row, $op->excavation_type ?? '');
-                        $sheet->setCellValueByColumnAndRow(9,  $row, $op->dimensions ?? '');
-                        $sheet->setCellValueByColumnAndRow(10, $row, $op->meterage ?? '');
-                        $row++;
-                    } else {
-                        foreach ($subOps as $sub) {
-                            foreach ($base as $col => $val) {
-                                $sheet->setCellValueByColumnAndRow($col, $row, $val);
-                            }
-                            $sheet->setCellValueByColumnAndRow(8,  $row, $op->excavation_type ?? '');
-                            $sheet->setCellValueByColumnAndRow(9,  $row, $op->dimensions ?? '');
-                            $sheet->setCellValueByColumnAndRow(10, $row, $op->meterage ?? '');
-                            $sheet->setCellValueByColumnAndRow(11, $row, $sub['meterage'] ?? '');
-                            $sheet->setCellValueByColumnAndRow(12, $row, $sub['broj_kucice'] ?? '');
-                            $row++;
-                        }
-                    }
-                } elseif ($op->kind === 'upuhivanje') {
-                    foreach ($base as $col => $val) {
-                        $sheet->setCellValueByColumnAndRow($col, $row, $val);
-                    }
-                    $sheet->setCellValueByColumnAndRow(13, $row, $op->address ?? '');
-                    $sheet->setCellValueByColumnAndRow(14, $row, $op->splajsovano ? 'Da' : 'Ne');
-                    $sheet->setCellValueByColumnAndRow(15, $row, $op->aktivirano ? 'Da' : 'Ne');
-                    $row++;
-                } elseif ($op->kind === 'ha_plus') {
-                    foreach ($base as $col => $val) {
-                        $sheet->setCellValueByColumnAndRow($col, $row, $val);
-                    }
-                    $sheet->setCellValueByColumnAndRow(10, $row, $op->meterage ?? '');
-                    $sheet->setCellValueByColumnAndRow(13, $row, $op->address ?? '');
-                    $row++;
-                }
+                $rows[] = $base + [
+                    'G' => $address !== '' ? $address : ($entry->street?->name ?? ''),
+                    'I' => $operationLabel,
+                    'J' => $meterage,
+                    'K' => $meterage !== '' ? 'm' : '',
+                    'N' => $excavationLabel,
+                    'P' => $operation->dimensions ?? '',
+                    'U' => $hasHp ? 'Ja' : '',
+                ];
             }
         }
 
-        $filename = 'projekat-' . Str::slug($project->name) . '-' . now()->format('Y-m-d') . '.xlsx';
-        $writer   = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        return $rows;
+    }
 
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, $filename, [
-            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
+    private function buildProjectExportTeamLabel(Project $project): string
+    {
+        return DB::table('project_teams')
+            ->where('project_id', $project->id)
+            ->whereNull('finished_at')
+            ->orderBy('name')
+            ->pluck('name')
+            ->filter()
+            ->unique()
+            ->implode(', ');
+    }
+
+    private function buildProjectExportWorkbook(array $rows, string $teamLabel = ''): string
+    {
+        $templatePath = public_path('TemplateEIR.xlsx');
+        $tempBasePath = tempnam(sys_get_temp_dir(), 'eir-export-');
+
+        if ($tempBasePath === false) {
+            throw new \RuntimeException('Ne mogu pripremiti export fajl.');
+        }
+
+        $exportPath = $tempBasePath . '.xlsx';
+        @unlink($tempBasePath);
+        @unlink($exportPath);
+
+        if (!copy($templatePath, $exportPath)) {
+            throw new \RuntimeException('Ne mogu kopirati export template.');
+        }
+
+        $zip = new ZipArchive();
+
+        if ($zip->open($exportPath) !== true) {
+            throw new \RuntimeException('Ne mogu otvoriti export template.');
+        }
+
+        $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
+
+        if ($sheetXml === false) {
+            $zip->close();
+            throw new \RuntimeException('Worksheet sheet1.xml nije pronađen u template-u.');
+        }
+
+        $dom = new DOMDocument('1.0', 'UTF-8');
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = false;
+        $dom->loadXML($sheetXml);
+
+        $xpath = new DOMXPath($dom);
+        $namespace = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+        $xpath->registerNamespace('x', $namespace);
+
+        $sheetData = $xpath->query('/x:worksheet/x:sheetData')->item(0);
+        $dimension = $xpath->query('/x:worksheet/x:dimension')->item(0);
+        $templateFirstRow = $xpath->query('/x:worksheet/x:sheetData/x:row[@r="3"]')->item(0);
+        $templateDefaultRow = $xpath->query('/x:worksheet/x:sheetData/x:row[@r="4"]')->item(0) ?: $templateFirstRow;
+
+        if (!$sheetData instanceof DOMElement || !$templateFirstRow instanceof DOMElement || !$templateDefaultRow instanceof DOMElement) {
+            $zip->close();
+            throw new \RuntimeException('Template nema očekivanu strukturu redova za export.');
+        }
+
+        $headerTeamCell = $xpath->query('/x:worksheet/x:sheetData/x:row[@r="1"]/x:c[@r="B1"]')->item(0);
+        if ($headerTeamCell instanceof DOMElement) {
+            $this->setInlineCellValue($dom, $headerTeamCell, $teamLabel);
+        }
+
+        $firstRowStyles = $this->extractTemplateRowStyles($templateFirstRow);
+        $defaultRowStyles = $this->extractTemplateRowStyles($templateDefaultRow);
+
+        $existingRows = [];
+        foreach ($xpath->query('/x:worksheet/x:sheetData/x:row[number(@r) >= 3]') as $rowNode) {
+            $existingRows[] = $rowNode;
+        }
+
+        foreach ($existingRows as $rowNode) {
+            $sheetData->removeChild($rowNode);
+        }
+
+        foreach ($rows === [] ? [[]] : $rows as $index => $values) {
+            $styleMap = $index === 0 ? $firstRowStyles : $defaultRowStyles;
+            $sheetData->appendChild($this->buildTemplateRowNode($dom, $namespace, 3 + $index, $styleMap, $values));
+        }
+
+        if ($dimension instanceof DOMElement) {
+            $dimension->setAttribute('ref', 'A1:CH' . max(2, 2 + max(1, count($rows))));
+        }
+
+        $zip->addFromString('xl/worksheets/sheet1.xml', $dom->saveXML());
+        $zip->close();
+
+        return $exportPath;
+    }
+
+    private function extractTemplateRowStyles(DOMElement $row): array
+    {
+        $styles = [];
+
+        foreach ($row->getElementsByTagName('c') as $cell) {
+            $reference = $cell->getAttribute('r');
+            $column = preg_replace('/\d+/', '', $reference);
+
+            if ($column === '' || $this->columnLetterToIndex($column) > 30) {
+                continue;
+            }
+
+            $styles[$column] = $cell->hasAttribute('s') ? $cell->getAttribute('s') : null;
+        }
+
+        return $styles;
+    }
+
+    private function buildTemplateRowNode(DOMDocument $dom, string $namespace, int $rowNumber, array $styles, array $values): DOMElement
+    {
+        $row = $dom->createElementNS($namespace, 'row');
+        $row->setAttribute('r', (string) $rowNumber);
+
+        foreach ($styles as $column => $style) {
+            $cell = $dom->createElementNS($namespace, 'c');
+            $cell->setAttribute('r', $column . $rowNumber);
+
+            if ($style !== null && $style !== '') {
+                $cell->setAttribute('s', $style);
+            }
+
+            $value = $values[$column] ?? null;
+
+            if ($value !== null && $value !== '') {
+                $this->setInlineCellValue($dom, $cell, (string) $value);
+            }
+
+            $row->appendChild($cell);
+        }
+
+        return $row;
+    }
+
+    private function setInlineCellValue(DOMDocument $dom, DOMElement $cell, string $value): void
+    {
+        while ($cell->firstChild) {
+            $cell->removeChild($cell->firstChild);
+        }
+
+        if ($value === '') {
+            $cell->removeAttribute('t');
+            return;
+        }
+
+        $cell->setAttribute('t', 'inlineStr');
+        $inlineString = $dom->createElementNS('http://schemas.openxmlformats.org/spreadsheetml/2006/main', 'is');
+        $text = $dom->createElementNS('http://schemas.openxmlformats.org/spreadsheetml/2006/main', 't');
+        $text->appendChild($dom->createTextNode($value));
+        $inlineString->appendChild($text);
+        $cell->appendChild($inlineString);
+    }
+
+    private function columnLetterToIndex(string $column): int
+    {
+        $index = 0;
+
+        foreach (str_split($column) as $character) {
+            $index = ($index * 26) + (ord($character) - 64);
+        }
+
+        return $index;
     }
 }

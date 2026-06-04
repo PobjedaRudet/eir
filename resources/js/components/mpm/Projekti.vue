@@ -102,15 +102,16 @@
               </svg>
               Upravljaj radnicima
             </a>
-            <a
-              :href="BASE + '/api/pm/projects/' + project.id + '/export'"
+            <button
+              type="button"
+              @click="downloadExport(project.id)"
               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 text-xs font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 transition-colors"
             >
               <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M10 3a1 1 0 0 1 1 1v6.586l1.293-1.293a1 1 0 1 1 1.414 1.414l-3 3a1 1 0 0 1-1.414 0l-3-3a1 1 0 1 1 1.414-1.414L9 10.586V4a1 1 0 0 1 1-1ZM3 15a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1Z" clip-rule="evenodd" />
               </svg>
               Excel export
-            </a>
+            </button>
             <button
               @click="toggleStatus(project)"
               :disabled="toggling === project.id"
@@ -171,6 +172,10 @@ async function toggleStatus(project) {
   } finally {
     toggling.value = null
   }
+}
+
+function downloadExport(projectId) {
+  window.location.href = BASE + '/api/pm/projects/' + projectId + '/export?ts=' + Date.now()
 }
 
 onMounted(loadProjects)
